@@ -1,6 +1,6 @@
 {
 	"name": "tomdenbraber/php-exception-flow-analysis",
-	"description": "Application which provides functionalities to perform an empirical study on PHP projects related to exception handling",
+	"description": "Application which provides functionalities for performing an empirical study on PHP projects related to exception handling",
 	"licence": "MIT",
 	"authors": [
 		{

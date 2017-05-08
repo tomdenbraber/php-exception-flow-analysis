@@ -7,8 +7,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class AnalyseObsoleteCatchBlocksCommand extends Command {
-
-
 	public function configure() {
 		$this->setName("analysis:obsolete-catch-blocks")
 			->setDescription("Get the amount of catch blocks that is obsolete")
@@ -32,11 +30,11 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 			die($exception_flow_file . " is not a valid flow file");
 		}
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
-		$ch = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
 
 		if (!is_file($class_hierarchy_file) || pathinfo($class_hierarchy_file, PATHINFO_EXTENSION) !== "json") {
 			die($class_hierarchy_file . " is not a valid flow file");
 		}
+		$ch = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
 
 		$catch_block_count = [
 			"type not encountered" => 0,
@@ -114,5 +112,4 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 		$body = sprintf("%d;%d;%d\n", $catch_block_count["type not encountered"], $catch_block_count["type caught by earlier catch"], $catch_block_count["(sub)type caught"]);
 		return $header . $body;
 	}
-
 }

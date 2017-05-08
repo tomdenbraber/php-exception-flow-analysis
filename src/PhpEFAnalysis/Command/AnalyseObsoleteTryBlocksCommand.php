@@ -9,7 +9,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 class AnalyseObsoleteTryBlocksCommand extends Command {
 	public function configure() {
 		$this->setName("analysis:obsolete-try-blocks")
-			->setDescription("Get the amount of encountered exceptions per method")
+			->setDescription("Get the amount of obsolete try blocks")
 			->addArgument(
 				'exceptionFlowFile',
 				InputArgument::REQUIRED,

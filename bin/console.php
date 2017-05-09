@@ -8,6 +8,7 @@ use \PhpEFAnalysis\Command\AnalyseObsoleteCatchBlocksCommand;
 use \PhpEFAnalysis\Command\AnalyseCatchBySubsumptionCommand;
 use \PhpEFAnalysis\Command\AnalyseRaisesAnnotatedCommand;
 use \PhpEFAnalysis\Command\AnalyseEncountersAnnotatedCommand;
+use \PhpEFAnalysis\Command\AnalyseEncountersContractCommand;
 use \PhpEFAnalysis\Command\BuildAnnotationsSetCommand;
 
 $application = new Application();
@@ -18,4 +19,5 @@ $application->add(new AnalyseCatchBySubsumptionCommand());
 $application->add(new BuildAnnotationsSetCommand());
 $application->add(new AnalyseRaisesAnnotatedCommand());
 $application->add(new AnalyseEncountersAnnotatedCommand());
+$application->add(new AnalyseEncountersContractCommand());
 $application->run();

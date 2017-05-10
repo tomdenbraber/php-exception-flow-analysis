@@ -24,30 +24,20 @@ class BuildAnnotationsSetCommand extends Command {
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the annotation set has to be written'
-			)
-			->addOption('isFilepath',
-				null,
-				InputOption::VALUE_NONE,
-				'Set this option if the AST argument is a filepath to an AST'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
-		$is_filepath = $input->getOption('isFilepath');
 		$output_path = $input->getArgument('outputPath');
-		if ($is_filepath === true) {
-			$ast_filepath = $input->getArgument('AstSystem');
-			$ast_system = new AstSystem();
-			if (is_dir($ast_filepath)) {
-				foreach (glob($ast_filepath . "/*.cache") as $cache_file) {
-					list($partial_ast, $errors, $cached_mtime) = unserialize(file_get_contents($cache_file));
-					$ast_system->addAst($cache_file, $partial_ast);
-				}
-			} else {
-				die($ast_filepath . " is not a valid directory");
+		$ast_filepath = $input->getArgument('AstSystem');
+		$ast_system = new AstSystem();
+		if (is_dir($ast_filepath)) {
+			foreach (glob($ast_filepath . "/*.cache") as $cache_file) {
+				list($partial_ast, $errors, $cached_mtime) = unserialize(file_get_contents($cache_file));
+				$ast_system->addAst($cache_file, $partial_ast);
 			}
 		} else {
-			$ast_system = $input->getArgument('AstSystem');
+			die($ast_filepath . " is not a valid directory");
 		}
 
 		$ast_traverser = new NodeTraverser();

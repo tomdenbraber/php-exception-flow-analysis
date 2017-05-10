@@ -52,7 +52,7 @@ class BuildAnnotationsSetCommand extends Command {
 			die($output_path . "/throws_annotations.json already exists");
 		} else {
 			file_put_contents($output_path . "/throws_annotations.json", $annotation_printer->printAnnotations($annotation_collector->getAnnotations()));
-			echo sprintf("Output has been written to %s/throws_annotations.json", $output_path);
+			$output->write(json_encode(["throws annotation set" => $output_path . "/throws_annotations.json"]));
 		}
 	}
 }

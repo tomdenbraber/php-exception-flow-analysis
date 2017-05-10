@@ -14,11 +14,16 @@ class AnalyseObsoleteTryBlocksCommand extends Command {
 				'exceptionFlowFile',
 				InputArgument::REQUIRED,
 				'Path to an exception flow file'
-			);
+			)->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
+			);;
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -38,8 +43,12 @@ class AnalyseObsoleteTryBlocksCommand extends Command {
 			$try_block_count["caught and encountered"] += $scope_accumulated_counts["caught and encountered"];
 		}
 
-		print $this->serializeResults($try_block_count);
-
+		if (file_exists($output_path . "/obsolete-try-blocks.json") === true) {
+			die($output_path . "/obsolete-try-blocks.json already exists");
+		} else {
+			file_put_contents($output_path . "/obsolete-try-blocks.json", json_encode($try_block_count, JSON_PRETTY_PRINT));
+			$output->write(json_encode(["obsolete try blocks" => $output_path . "/obsolete-try-blocks.json"]));
+		}
 	}
 
 	private function analyseScope($scope_data) {
@@ -87,10 +96,4 @@ class AnalyseObsoleteTryBlocksCommand extends Command {
 		return empty($scope["raises"]) === false || empty($scope["propagates"]) === false || empty($scope["uncaught"]) === false;
 	}
 
-
-	private function serializeResults($try_block_counts) {
-		$header = "encountered but nothing caught;nothing encountered;caught and encountered\n";
-		$body = sprintf("%d;%d;%d\n", $try_block_counts["encountered but nothing caught"], $try_block_counts["nothing encountered"], $try_block_counts["caught and encountered"]);
-		return $header . $body;
-	}
 }

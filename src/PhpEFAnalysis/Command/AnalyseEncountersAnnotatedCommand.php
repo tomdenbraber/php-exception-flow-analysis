@@ -18,19 +18,18 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			->addArgument(
 				'annotationsFile',
 				InputArgument::REQUIRED,
-				'A file containing the @throws annotations for each function/method'
-			)
-			->addOption('outputSpecificInstances',
-				null,
-				InputOption::VALUE_NONE,
-				'Set this option if you want to see the specific instances of violations'
+				'A file containing the @throws annotations for each function/method')
+			->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
-		$output_specific_instances = $input->getOption("outputSpecificInstances");
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -75,21 +74,36 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			}
 		}
 
-		if ($output_specific_instances === true) {
-			echo json_encode(array_filter($misses, function($item) {
-				return empty($item) === false;
-			}), JSON_PRETTY_PRINT);
-		} else {
-			$count_missed = 0;
-			foreach ($misses as $fn => $exceptions) {
-				$count_missed += count($exceptions);
-			}
-			$count_correct = 0;
-			foreach ($correct as $fn => $exceptions) {
-				$count_correct += count($exceptions);
-			}
-
-			print sprintf("misses;correct\n%d;%d", $count_missed, $count_correct);
+		$count_missed = 0;
+		foreach ($misses as $fn => $exceptions) {
+			$count_missed += count($exceptions);
 		}
+		$count_correct = 0;
+		foreach ($correct as $fn => $exceptions) {
+			$count_correct += count($exceptions);
+		}
+
+		if (file_exists($output_path . "/encounters-annotated-specific.json") === true) {
+			die($output_path . "/encounters-annotated-specific.json already exists");
+		} else {
+			file_put_contents($output_path . "/encounters-annotated-specific.json", json_encode(array_filter($misses, function($item) {
+				return empty($item) === false;
+			}), JSON_PRETTY_PRINT));
+		}
+
+
+		if (file_exists($output_path . "/encounters-annotated-numbers.json") === true) {
+			die($output_path . "/encounters-annotated-numbers.json already exists");
+		} else {
+			file_put_contents($output_path . "/encounters-annotated-numbers.json", json_encode([
+				"correctly annotated" => $count_correct,
+				"not annotated" => $count_missed,
+			], JSON_PRETTY_PRINT));
+		}
+
+		$output->write(json_encode([
+			"encounters annotated specific" => $output_path . "/encounters-annotated-specific.json",
+			"encounters annotated numbers" => $output_path . "/encounters-annotated-numbers.json",
+		]));
 	}
 }

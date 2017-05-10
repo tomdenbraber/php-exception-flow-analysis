@@ -14,11 +14,16 @@ class AnalyseEncountersPerMethodCommand extends Command {
 				'exceptionFlowFile',
 				InputArgument::REQUIRED,
 				'Path to an exception flow file'
+			)->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -34,12 +39,20 @@ class AnalyseEncountersPerMethodCommand extends Command {
 			}
 			$scope_encounters_count = $this->countForScope($scope_data);
 			if (isset($exception_count[$scope_encounters_count]) === false) {
-				$exception_count[$scope_encounters_count] = 1;
+				$exception_count["" . $scope_encounters_count] = 1;
 			} else {
-				$exception_count[$scope_encounters_count] += 1;
+				$exception_count["" . $scope_encounters_count] += 1;
 			}
 		}
-		print $this->serializeResults($exception_count);
+
+		ksort($exception_count);
+
+		if (file_exists($output_path . "/encounters-per-method.json") === true) {
+			die($output_path . "/encounters-per-method.json already exists");
+		} else {
+			file_put_contents($output_path . "/encounters-per-method.json", json_encode($exception_count, JSON_FORCE_OBJECT|JSON_PRETTY_PRINT ));
+			$output->write(json_encode(["encounters per method" => $output_path . "/encounters-per-method.json"]));
+		}
 	}
 
 
@@ -57,14 +70,5 @@ class AnalyseEncountersPerMethodCommand extends Command {
 			}
 		}
 		return $count;
-	}
-
-	private function serializeResults($nr_exception_counts) {
-		ksort($nr_exception_counts);
-		$csv_str = "nr_of_encountered_exceptions;nr_of_tl_scopes\n";
-		foreach ($nr_exception_counts as $nr_of_exceptions => $nr_of_scopes) {
-			$csv_str .= sprintf("%d;%d\n",$nr_of_exceptions, $nr_of_scopes);
-		}
-		return $csv_str;
 	}
 }

@@ -19,12 +19,17 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 				'classHierarchyFile',
 				InputArgument::REQUIRED,
 				'Path to a class hierarchy file'
+			)->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$class_hierarchy_file = $input->getArgument('classHierarchyFile');
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -50,7 +55,12 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 			$catch_block_count["(sub)type caught"] += $current_scope_count["(sub)type caught"];
 		}
 
-		print $this->serializeResults($catch_block_count);
+		if (file_exists($output_path . "/obsolete-catch-blocks.json") === true) {
+			die($output_path . "/obsolete-catch-blocks.json already exists");
+		} else {
+			file_put_contents($output_path . "/obsolete-catch-blocks.json", json_encode($catch_block_count, JSON_PRETTY_PRINT));
+			$output->write(json_encode(["obsolete catch blocks" => $output_path . "/obsolete-catch-blocks.json"]));
+		}
 	}
 
 	private function analyseScope($scope_data, $class_hierarchy) {
@@ -62,7 +72,6 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 
 
 		foreach ($scope_data["guarded scopes"] as $guarded_scope_name => $guarded_scope_data) {
-			print $guarded_scope_name;
 			$inclosed_scope_name_arr = array_keys($guarded_scope_data["inclosed"]);
 			$inclosed_scope_name = array_pop($inclosed_scope_name_arr); //there can only be one;
 
@@ -104,12 +113,5 @@ class AnalyseObsoleteCatchBlocksCommand extends Command {
 
 	private function getEncountersForScope($scope) {
 		return array_merge($scope["raises"], $scope["propagates"], $scope["uncaught"]);
-	}
-
-
-	private function serializeResults($catch_block_count) {
-		$header = "type not encountered;type caught by earlier catch;(sub)type caught\n";
-		$body = sprintf("%d;%d;%d\n", $catch_block_count["type not encountered"], $catch_block_count["type caught by earlier catch"], $catch_block_count["(sub)type caught"]);
-		return $header . $body;
 	}
 }

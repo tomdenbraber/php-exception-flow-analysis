@@ -25,10 +25,10 @@ class AnalyseEncountersContractCommand extends Command {
 				InputArgument::REQUIRED,
 				'A file containing a partial order of methods'
 			)
-			->addOption('outputSpecificInstances',
-				null,
-				InputOption::VALUE_NONE,
-				'Set this option if you want to see the specific instances of violations'
+			->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
@@ -36,7 +36,7 @@ class AnalyseEncountersContractCommand extends Command {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
 		$method_order_file = $input->getArgument('methodOrderFile');
-		$output_specific_instances = $input->getOption("outputSpecificInstances");
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -100,8 +100,15 @@ class AnalyseEncountersContractCommand extends Command {
 			}
 		}
 
-		if ($output_specific_instances === true) {
-			print json_encode($misses, JSON_PRETTY_PRINT);
+		if (file_exists($output_path . "/encounters-contract-specific.json") === true) {
+			die($output_path . "/encounters-contract-specific.json already exists");
+		} else {
+			file_put_contents($output_path . "/encounters-contract-specific.json", json_encode($misses, JSON_PRETTY_PRINT));
+		}
+
+
+		if (file_exists($output_path . "/encounters-contract-numbers.json") === true) {
+			die($output_path . "/encounters-contract-numbers.json already exists");
 		} else {
 			$unique_miss_count = 0;
 			$unique_correct_count = 0;
@@ -111,7 +118,19 @@ class AnalyseEncountersContractCommand extends Command {
 			foreach ($correct as $function => $correct_for_fn) {
 				$unique_correct_count += count(array_keys($correct_for_fn));
 			}
-			print sprintf("misses;correct\n%d;%d", $unique_miss_count, $unique_correct_count);
+			file_put_contents($output_path . "/encounters-contract-numbers.json", json_encode([
+				"correctly annotated" => $unique_correct_count,
+				"not annotated" => $unique_miss_count,
+			], JSON_PRETTY_PRINT));
+			$output->write(json_encode([]));
 		}
+
+		$output->write(json_encode([
+			"encounters contract specific" => $output_path . "/encounters-contract-specific.json",
+			"encounters contract numbers" => $output_path . "/encounters-contract-numbers.json"]
+		));
+
+
+
 	}
 }

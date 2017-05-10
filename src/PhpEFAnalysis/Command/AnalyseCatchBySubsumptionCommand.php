@@ -15,12 +15,17 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			->addArgument(
 				'exceptionFlowFile',
 				InputArgument::REQUIRED,
-				'Path to an exception flow file'
+				'Path to an exception flow file')
+			->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
+		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -38,7 +43,12 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			$caught_exception_count["caught by subsumption"] += $current_scope_count["caught by subsumption"];
 		}
 
-		print $this->serializeResults($caught_exception_count);
+		if (file_exists($output_path . "/catch-by-subsumption.json") === true) {
+			die($output_path . "/catch-by-subsumption.json already exists");
+		} else {
+			file_put_contents($output_path . "/catch-by-subsumption.json", json_encode($caught_exception_count, JSON_PRETTY_PRINT));
+			$output->write(json_encode(["catch by subsumption" => $output_path . "/catch-by-subsumption.json"]));
+		}
 	}
 
 	private function analyseScope($scope_data) {
@@ -69,12 +79,6 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 		}
 
 		return $caught_exception_count;
-	}
-
-	private function serializeResults($caught_exception_count) {
-		$header = "caught by exact type;caught by subsumption\n";
-		$body = sprintf("%d;%d\n", $caught_exception_count["caught by exact type"], $caught_exception_count["caught by subsumption"]);
-		return $header . $body;
 	}
 
 }

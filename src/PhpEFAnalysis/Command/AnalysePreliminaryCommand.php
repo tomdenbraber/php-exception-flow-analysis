@@ -49,19 +49,17 @@ class AnalysePreliminaryCommand extends Command {
 		$system_traverser = new SystemTraverser($ast_traverser);
 		$system_traverser->traverse($ast_system);
 
-		$header = [];
-		$data = [];
+		$counts = [];
 		foreach ($node_counters as $node_counter) {
-			$type_splitted = explode("\\", $node_counter->getCountedNodeType());;
-			$header[] = array_pop($type_splitted);
-			$data[] = $node_counter->getCount();
+			$type_splitted = explode("\\", $node_counter->getCountedNodeType());
+			$counts[array_pop($type_splitted)] = $node_counter->getCount();
 		}
 
-		if (file_exists($output_path . "/preliminary_analysis.csv") === true) {
+		if (file_exists($output_path . "/preliminary_analysis.json") === true) {
 			die($output_path . "/throws_annotations.json already exists");
 		} else {
-			file_put_contents($output_path . "/preliminary_analysis.csv", sprintf("%s\n%s", implode(";", $header), implode(";", $data)));
-			echo sprintf("Output has been written to %s/preliminary_analysis.csv", $output_path);
+			file_put_contents($output_path . "/preliminary_analysis.json",json_encode($counts, JSON_PRETTY_PRINT));
+			$output->write(json_encode(["preliminary analysis" => $output_path . "/preliminary_analysis.json"]));
 		}
 	}
 }

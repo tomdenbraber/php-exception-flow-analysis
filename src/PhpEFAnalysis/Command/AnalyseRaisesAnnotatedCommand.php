@@ -20,17 +20,17 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 				InputArgument::REQUIRED,
 				'A file containing the @throws annotations for each function/method'
 			)
-			->addOption('outputSpecificInstances',
-				null,
-				InputOption::VALUE_NONE,
-				'Set this option if you want to see the specific instances of violations'
+			->addArgument(
+				'outputPath',
+				InputArgument::REQUIRED,
+				'The path to which the analysis results have to be written'
 			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
-		$output_specific_instances = $input->getOption("outputSpecificInstances");
+		$output_path = $input->getArgument("outputPath");
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
@@ -66,10 +66,17 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 			}
 		}
 
-		if ($output_specific_instances === true) {
-			echo json_encode(array_filter($misses, function($item) {
+
+		if (file_exists($output_path . "/raises-annotated-specific.json") === true) {
+			die($output_path . "/raises-annotated-specific.json already exists");
+		} else {
+			file_put_contents($output_path . "/raises-annotated-specific.json", json_encode(array_filter($misses, function($item) {
 				return empty($item) === false;
-			}), JSON_PRETTY_PRINT);
+			}), JSON_PRETTY_PRINT));
+		}
+
+		if (file_exists($output_path . "/raises-annotated-numbers.json") === true) {
+			die($output_path . "/raises-annotated-numbers.json already exists");
 		} else {
 			$count_missed = 0;
 			foreach ($misses as $fn => $exceptions) {
@@ -80,7 +87,15 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 				$count_correct += count($exceptions);
 			}
 
-			print sprintf("misses;correct\n%d;%d", $count_missed, $count_correct);
+			file_put_contents($output_path . "/raises-annotated-numbers.json", json_encode([
+				"correctly annotated" => $count_correct,
+				"not annotated" => $count_missed,
+			], JSON_PRETTY_PRINT));
 		}
+
+		$output->write(json_encode([
+			"raises annotated specific" => $output_path . "/raises-annotated-specific.json",
+			"raises annotated numbers" => $output_path . "/raises-annotated-numbers.json",
+		]));
 	}
 }

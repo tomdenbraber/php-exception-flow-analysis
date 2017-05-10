@@ -10,6 +10,7 @@ use \PhpEFAnalysis\Command\AnalyseRaisesAnnotatedCommand;
 use \PhpEFAnalysis\Command\AnalyseEncountersAnnotatedCommand;
 use \PhpEFAnalysis\Command\AnalyseEncountersContractCommand;
 use \PhpEFAnalysis\Command\BuildAnnotationsSetCommand;
+use \PhpEFAnalysis\Command\BuildExceptionFlowCommand;
 use \PhpEFAnalysis\Command\AnalysePreliminaryCommand;
 
 $application = new Application();
@@ -21,6 +22,9 @@ $application->add(new AnalyseRaisesAnnotatedCommand());
 $application->add(new AnalyseEncountersAnnotatedCommand());
 $application->add(new AnalyseEncountersContractCommand());
 
-$application->add(new BuildAnnotationsSetCommand());
 $application->add(new AnalysePreliminaryCommand());
+$application->add(new BuildAnnotationsSetCommand());
+
+$application->add(new BuildExceptionFlowCommand());
+
 $application->run();

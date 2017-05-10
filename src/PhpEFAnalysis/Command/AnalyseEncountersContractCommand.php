@@ -122,15 +122,11 @@ class AnalyseEncountersContractCommand extends Command {
 				"correctly annotated" => $unique_correct_count,
 				"not annotated" => $unique_miss_count,
 			], JSON_PRETTY_PRINT));
-			$output->write(json_encode([]));
 		}
 
 		$output->write(json_encode([
 			"encounters contract specific" => $output_path . "/encounters-contract-specific.json",
 			"encounters contract numbers" => $output_path . "/encounters-contract-numbers.json"]
 		));
-
-
-
 	}
 }

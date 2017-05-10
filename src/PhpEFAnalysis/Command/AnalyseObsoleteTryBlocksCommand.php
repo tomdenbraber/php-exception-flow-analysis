@@ -59,7 +59,6 @@ class AnalyseObsoleteTryBlocksCommand extends Command {
 		];
 
 		foreach ($scope_data["guarded scopes"] as $guarded_scope_name => $guarded_scope_data) {
-			print $guarded_scope_name;
 			$inclosed_scope_name_arr = array_keys($guarded_scope_data["inclosed"]);
 			$inclosed_scope_name = array_pop($inclosed_scope_name_arr); //there can only be one;
 			$scope_encounters = $this->scopeEncountersAnException($guarded_scope_data["inclosed"][$inclosed_scope_name]);

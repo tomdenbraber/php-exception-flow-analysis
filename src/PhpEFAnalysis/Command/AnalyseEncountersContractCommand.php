@@ -4,7 +4,6 @@ namespace PhpEFAnalysis\Command;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class AnalyseEncountersContractCommand extends Command {
@@ -78,7 +77,11 @@ class AnalyseEncountersContractCommand extends Command {
 			}
 
 			$ancestors = $method_order[$method_order_scope_name]["ancestors"];
-			foreach ($ancestors as $ancestor) {
+			foreach ($ancestors as $ancestor => $method_data) {
+				if ($method_data["abstract"] !== true) {
+					continue;
+				}
+
 				if (isset($misses[$ancestor]) === false) {
 					$misses[$ancestor] = [];
 					$correct[$ancestor] = [];
@@ -86,12 +89,12 @@ class AnalyseEncountersContractCommand extends Command {
 
 				foreach ($encounters as $encounter) {
 					if (isset($annotations[$ancestor][$encounter]) === false && isset($annotations[$ancestor]["\\" . $encounter]) === false) {
-						if (!isset($misses[$ancestor][$encounter]) === false) {
+						if (isset($misses[$ancestor][$encounter]) === false) {
 							$misses[$ancestor][$encounter] = [];
 						}
 						$misses[$ancestor][$encounter][] = $scope_name;
 					} else {
-						if (!isset($correct[$ancestor][$encounter]) === false) {
+						if (isset($correct[$ancestor][$encounter]) === false) {
 							$correct[$ancestor][$encounter] = [];
 						}
 						$correct[$ancestor][$encounter][] = $scope_name;

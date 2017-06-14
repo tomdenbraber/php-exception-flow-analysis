@@ -27,6 +27,11 @@ class AnalyseAllCommand extends Command {
 				InputArgument::REQUIRED,
 				"Path to a class hierarchy file")
 			->addArgument(
+				'pathToCatchClauses',
+				InputArgument::REQUIRED,
+				'Path to an a file containing exception paths'
+			)
+			->addArgument(
 				'AstSystem',
 				InputArgument::REQUIRED,
 				'An AstSystem (collection of nodes) of the program to be analysed')
@@ -69,6 +74,11 @@ class AnalyseAllCommand extends Command {
 			"outputPath" => $input->getArgument("outputPath"),
 		]);
 
+		$path_input = new ArrayInput([
+			"pathToCatchClauses" => $input->getArgument("pathToCatchClauses"),
+			"outputPath" => $input->getArgument("outputPath"),
+		]);
+
 		$buffered_output = new BufferedOutput();
 		$created_paths = [];
 
@@ -78,6 +88,7 @@ class AnalyseAllCommand extends Command {
 		$obsolete_try_cmd = $app->find("analysis:obsolete-try-blocks");
 		$obsolete_catch_cmd = $app->find("analysis:obsolete-catch-blocks");
 		$catch_by_sub_cmd = $app->find("analysis:catch-by-subsumption");
+		$path_analysis_cmd = $app->find("analysis:path-until-caught");
 
 		$raises_annotated_cmd = $app->find("analysis:raises-annotated");
 		$encounters_annotated_cmd = $app->find("analysis:encounters-annotated");
@@ -93,6 +104,8 @@ class AnalyseAllCommand extends Command {
 		$obsolete_catch_cmd->run($ef_and_class_hierarchy, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$catch_by_sub_cmd->run($ef_input, $buffered_output);
+		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
+		$path_analysis_cmd->run($path_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 
 		$raises_annotated_cmd->run($ef_and_annotations_input, $buffered_output);

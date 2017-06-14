@@ -59,6 +59,7 @@ class BuildAndAnalyseCommand extends Command {
 			"classHierarchyFile" => $paths["class hierarchy"],
 			"annotationsFile" => $paths["throws annotation set"],
 			"AstSystem" => $paths["ast system cache"],
+			"pathToCatchClauses" => $paths["path to catch clauses"],
 			"outputPath" => $project_results_path,
 		]);
 		$analyse_all->run($analyse_all_input, $buffered_output);

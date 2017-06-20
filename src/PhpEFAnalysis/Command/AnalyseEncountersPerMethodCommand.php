@@ -37,7 +37,8 @@ class AnalyseEncountersPerMethodCommand extends Command {
 			if ($scope === "{main}") { //{main} is not a method or function
 				continue;
 			}
-			$scope_encounters_count = $this->countForScope($scope_data);
+			$scope_encounters = $this->gatherForScope($scope_data);
+			$scope_encounters_count = count($scope_encounters);
 			if (isset($exception_count[$scope_encounters_count]) === false) {
 				$exception_count["" . $scope_encounters_count] = 1;
 			} else {
@@ -55,20 +56,16 @@ class AnalyseEncountersPerMethodCommand extends Command {
 		}
 	}
 
-
-	private function countForScope($scope_data) {
-		$encounters = $scope_data["raises"];
+	private function gatherForScope($scope_data, $encounters = []) {
+		$encounters = array_merge($scope_data["raises"], $encounters);
 		foreach ($scope_data["propagates"] as $method => $propagated_exceptions) {
 			$encounters = array_merge($encounters, $propagated_exceptions);
 		}
-
-		$count = count($encounters);
-
 		foreach ($scope_data["guarded scopes"] as $guarded_scope_name => $guarded_scope_data) {
 			foreach ($guarded_scope_data["inclosed"] as $inclosed_scope => $inclosed_scope_data) {
-				$count += $this->countForScope($inclosed_scope_data);
+				$encounters = $this->gatherForScope($inclosed_scope_data, $encounters);
 			}
 		}
-		return $count;
+		return $encounters;
 	}
 }

@@ -55,6 +55,12 @@ class AnalyseAllCommand extends Command {
 			"outputPath" => $input->getArgument("outputPath"),
 		]);
 
+		$ef_and_method_order = new ArrayInput([
+			"exceptionFlowFile" => $input->getArgument("exceptionFlowFile"),
+			"methodOrderFile" => $input->getArgument("methodOrderFile"),
+			"outputPath" => $input->getArgument("outputPath"),
+		]);
+
 		$ef_and_class_hierarchy = new ArrayInput([
 			"exceptionFlowFile" => $input->getArgument("exceptionFlowFile"),
 			"classHierarchyFile" => $input->getArgument("classHierarchyFile"),
@@ -97,7 +103,7 @@ class AnalyseAllCommand extends Command {
 		$preliminary_cmd->run($ast_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 
-		$no_encounters_cmd->run($ef_input, $buffered_output);
+		$no_encounters_cmd->run($ef_and_method_order, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$obsolete_try_cmd->run($ef_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);

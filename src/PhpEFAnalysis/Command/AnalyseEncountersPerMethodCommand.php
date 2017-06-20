@@ -15,6 +15,10 @@ class AnalyseEncountersPerMethodCommand extends Command {
 				InputArgument::REQUIRED,
 				'Path to an exception flow file'
 			)->addArgument(
+				'methodOrderFile',
+				InputArgument::REQUIRED,
+				'A file containing a partial order of methods'
+			)->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -23,18 +27,22 @@ class AnalyseEncountersPerMethodCommand extends Command {
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
+		$method_order_file = $input->getArgument('methodOrderFile');
 		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
 			die($exception_flow_file . " is not a valid flow file");
 		}
+		if (!is_file($method_order_file) || pathinfo($method_order_file, PATHINFO_EXTENSION) !== "json") {
+			die($method_order_file . " is not a valid method order file");
+		}
 
 		$exception_count = [];
 
-
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
+		$method_data = json_decode(file_get_contents($method_order_file), $assoc = true);
 		foreach ($ef as $scope => $scope_data) {
-			if ($scope === "{main}") { //{main} is not a method or function
+			if ($scope === "{main}" || (isset($method_data[$scope]) === true && $method_data[$scope]["abstract"] === true)) { //{main} is not a method or function, and abstract functions do not encounter anything by definition
 				continue;
 			}
 			$scope_encounters = $this->gatherForScope($scope_data);

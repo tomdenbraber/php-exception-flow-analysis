@@ -45,8 +45,9 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$annotations = $annotations_file["Resolved Annotations"];
 
-		$misses = [];
-		$correct = [];
+		$encountered_and_not_annotated = [];
+		$encountered_and_annotated = [];
+		$annotated_and_not_encountered = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			$encounters = $scope_data["raises"];
@@ -67,35 +68,51 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 				unset($encounters[$index]);
 			}
 
-			$misses[$scope_name] = [];
-			$correct[$scope_name] = [];
+			$encountered_and_not_annotated[$scope_name] = [];
+			$encountered_and_annotated[$scope_name] = [];
+			$annotated_and_not_encountered[$scope_name] = [];
 			foreach ($encounters as $encounter) {
 				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]['\\' . $encounter]) === false) {
-					//not documented, so add to misses
-					$misses[$scope_name][] = $encounter;
+					//not documented, so add to encountered_and_not_annotated
+					$encountered_and_not_annotated[$scope_name][] = $encounter;
 				} else {
-					$correct[$scope_name][] = $encounter;
+					$encountered_and_annotated[$scope_name][] = $encounter;
 				}
 			}
+
+
+			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
+				if (in_array($annotated_exc, $encounters, true) === false && in_array(str_replace('\\', "", $annotated_exc), $encounters, true) === false) {
+					$annotated_and_not_encountered[$scope_name][] = $annotated_exc;
+				}
+			}
+
 		}
 
-		$count_missed = 0;
-		foreach ($misses as $fn => $exceptions) {
-			$count_missed += count($exceptions);
+		$count_encountered_and_not_annotated = 0;
+		foreach ($encountered_and_not_annotated as $fn => $exceptions) {
+			$count_encountered_and_not_annotated += count($exceptions);
 		}
-		$count_correct = 0;
-		foreach ($correct as $fn => $exceptions) {
-			$count_correct += count($exceptions);
+		$count_encountered_and_annotated = 0;
+		foreach ($encountered_and_annotated as $fn => $exceptions) {
+			$count_encountered_and_annotated += count($exceptions);
+		}
+		$count_annotated_and_not_encountered = 0;
+		foreach ($annotated_and_not_encountered as $fn => $annotations) {
+			$count_annotated_and_not_encountered += count($annotations);
 		}
 
 		if (file_exists($output_path . "/encounters-annotated-specific.json") === true) {
 			die($output_path . "/encounters-annotated-specific.json already exists");
 		} else {
 			file_put_contents($output_path . "/encounters-annotated-specific.json", json_encode([
-				"misses" => array_filter($misses, function($item) {
+				"encountered and not annotated" => array_filter($encountered_and_not_annotated, function($item) {
 					return empty($item) === false;
 				}),
-				"correct" => array_filter($correct, function($item) {
+				"encountered and annotated" => array_filter($encountered_and_annotated, function($item) {
+					return empty($item) === false;
+				}),
+				"annotated and not encountered" => array_filter($annotated_and_not_encountered, function($item) {
 					return empty($item) === false;
 				}),
 			], JSON_PRETTY_PRINT));
@@ -106,8 +123,9 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			die($output_path . "/encounters-annotated-numbers.json already exists");
 		} else {
 			file_put_contents($output_path . "/encounters-annotated-numbers.json", json_encode([
-				"correctly annotated" => $count_correct,
-				"not annotated" => $count_missed,
+				"correctly annotated" => $count_encountered_and_annotated,
+				"not annotated" => $count_encountered_and_not_annotated,
+				"annotated and not encountered" => $count_annotated_and_not_encountered,
 			], JSON_PRETTY_PRINT));
 		}
 

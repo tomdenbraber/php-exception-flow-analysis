@@ -53,6 +53,9 @@ class AnalyseEncountersContractCommand extends Command {
 		$annotations = $annotations_file["Resolved Annotations"];
 		$encountered_but_not_annotated = [];
 		$encountered_and_annotated = [];
+		$annotated_and_not_encountered = []; //counts all exceptions that are annotated on an abstract method, but never encountered.
+
+		$encounters_per_scope = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			$method_order_scope_name = strtolower($scope_name);
@@ -77,6 +80,7 @@ class AnalyseEncountersContractCommand extends Command {
 				unset($encounters[$index]);
 			}
 
+			$encounters_per_scope[$scope_name] = $encounters;
 
 			$ancestors = $method_order[$method_order_scope_name]["ancestors"];
 			foreach ($ancestors as $ancestor => $method_data) {
@@ -105,14 +109,39 @@ class AnalyseEncountersContractCommand extends Command {
 			}
 		}
 
+		foreach ($method_order as $method => $method_data) {
+			if ($method_data["abstract"] !== true) {
+				continue;
+			}
+
+			$contractual_annotations = $annotations[$method];
+			foreach ($method_data["descendants"] as $descendant) {
+				if ($method_order[$descendant]["abstract"] === true) {
+					continue; //abstract child cannot violate contract
+				}
+
+				foreach ($contractual_annotations as $annotation) {
+					if (in_array($annotation, $encounters_per_scope[$descendant], true) === true || in_array(str_replace('\\', "", $annotation), $encounters_per_scope[$descendant], true) === true) {
+						unset($contractual_annotations[$annotation]);
+					}
+				}
+			}
+
+			//now, contractual annotations contains the exceptions which were annotated but not thrown in any of the implementing methods
+			$annotated_and_not_encountered[$method] = $contractual_annotations;
+		}
+
 		if (file_exists($output_path . "/encounters-contract-specific.json") === true) {
 			die($output_path . "/encounters-contract-specific.json already exists");
 		} else {
 			file_put_contents($output_path . "/encounters-contract-specific.json", json_encode([
-				"encountered_but_not_annotated" => array_filter($encountered_but_not_annotated, function($item) {
+				"encountered but not annotated" => array_filter($encountered_but_not_annotated, function($item) {
 					return empty($item) === false;
 				}),
-				"encountered_and_annotated" => array_filter($encountered_and_annotated, function($item) {
+				"encountered and annotated" => array_filter($encountered_and_annotated, function($item) {
+					return empty($item) === false;
+				}),
+				"annotated and not encountered" => array_filter($annotated_and_not_encountered, function($item) {
 					return empty($item) === false;
 				}),
 			], JSON_PRETTY_PRINT));
@@ -130,6 +159,10 @@ class AnalyseEncountersContractCommand extends Command {
 			$exceptions_correct_count = 0;
 			$complying_methods_count = 0;
 			$unique_complying_methods_count = 0;
+			$redundant_annotated_method_count = 0;
+			$redundant_annotation_count = 0;
+
+
 
 			foreach ($encountered_but_not_annotated as $function => $missed_for_fn) {
 				if (empty($missed_for_fn) === true) {
@@ -159,6 +192,15 @@ class AnalyseEncountersContractCommand extends Command {
 				}
 				$unique_complying_methods_count += count(array_unique($complying_merged));
 			}
+			foreach ($annotated_and_not_encountered as $method => $annotations) {
+				if (empty($annotations) === true) {
+					continue;
+				}
+				$redundant_annotated_method_count += 1;
+				$redundant_annotation_count += count($annotations);
+			}
+
+
 			file_put_contents($output_path . "/encounters-contract-numbers.json", json_encode([
 				"encountered but not annotated" => [
 					"methods" => $methods_miss_count,
@@ -171,6 +213,10 @@ class AnalyseEncountersContractCommand extends Command {
 					"exceptions" => $exceptions_correct_count,
 					"unique complying functions" => $unique_complying_methods_count,
 					"total compliances" => $complying_methods_count,
+				],
+				"annotated and not encountered" => [
+					"methods" => $redundant_annotated_method_count,
+					"annotations" => $redundant_annotation_count,
 				]
 			], JSON_PRETTY_PRINT));
 		}

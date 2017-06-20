@@ -48,15 +48,7 @@ class AnalyseEncountersContractCommand extends Command {
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 
-
 		$annotations = $annotations_file["Resolved Annotations"];
-		foreach ($annotations as $method => $types) {
-			foreach ($types as $type_1 => $type_2) {
-				$annotations[$method][strtolower($type_1)] = strtolower($type_2);
-				unset($annotations[$method][$type_1]);
-			}
-		}
-
 		$misses = [];
 		$correct = [];
 
@@ -75,6 +67,11 @@ class AnalyseEncountersContractCommand extends Command {
 			foreach ($scope_data["uncaught"] as $guarded_scope => $uncaught_exceptions) {
 				$encounters = array_merge($encounters, $uncaught_exceptions);
 			}
+			$encounters = array_unique($encounters);
+			if (($index = array_search("unknown", $encounters)) !== false) {
+				unset($encounters[$index]);
+			}
+
 
 			$ancestors = $method_order[$method_order_scope_name]["ancestors"];
 			foreach ($ancestors as $ancestor => $method_data) {

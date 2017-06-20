@@ -41,12 +41,12 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$annotations = $annotations_file["Resolved Annotations"];
-		foreach ($annotations as $method => $types) {
+		/*foreach ($annotations as $method => $types) {
 			foreach ($types as $type_1 => $type_2) {
 				$annotations[$method][strtolower($type_1)] = strtolower($type_2);
 				unset($annotations[$method][$type_1]);
 			}
-		}
+		}*/
 
 		$misses = [];
 		$correct = [];
@@ -62,10 +62,15 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 				$encounters = array_merge($encounters, $uncaught_exceptions);
 			}
 
+			$encounters = array_unique($encounters);
+			if (($index = array_search("unknown", $encounters)) !== false) {
+				unset($encounters[$index]);
+			}
+
 			$misses[$scope_name] = [];
 			$correct[$scope_name] = [];
 			foreach ($encounters as $encounter) {
-				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]["\\" . $encounter]) === false) {
+				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]['\\' . $encounter]) === false) {
 					//not documented, so add to misses
 					$misses[$scope_name][] = $encounter;
 				} else {

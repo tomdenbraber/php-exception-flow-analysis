@@ -42,12 +42,6 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$annotations = $annotations_file["Resolved Annotations"];
-		foreach ($annotations as $method => $types) {
-			foreach ($types as $type_1 => $type_2) {
-				$annotations[$method][strtolower($type_1)] = strtolower($type_2);
-				unset($annotations[$method][$type_1]);
-			}
-		}
 
 		$misses = [];
 		$correct = [];
@@ -57,9 +51,10 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 			$misses[$scope_name] = [];
 			$correct[$scope_name] = [];
 			foreach ($counting_raises as $counting_raise) {
-				if (isset($annotations[$scope_name][$counting_raise]) === false && isset($annotations[$scope_name]["\\" . $counting_raise]) === false) {
+				if (isset($annotations[$scope_name][$counting_raise]) === false && isset($annotations[$scope_name]['\\' . $counting_raise]) === false) {
 					//not documented, so add to misses
 					$misses[$scope_name][] = $counting_raise;
+					print $scope_name . " did not annotate " . '\\' . $counting_raise . "\n";
 				} else {
 					$correct[$scope_name][] = $counting_raise;
 				}

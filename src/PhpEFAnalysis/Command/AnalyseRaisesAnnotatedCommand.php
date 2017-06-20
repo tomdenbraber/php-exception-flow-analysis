@@ -43,11 +43,20 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$annotations = $annotations_file["Resolved Annotations"];
 
+		unset($ef["{main}"]);
+
 		$misses = [];
 		$correct = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			$counting_raises = array_unique($scope_data["raises"]);
+			if (($index = array_search("unknown", $counting_raises, true)) !== false) {
+				unset($counting_raises[$index]);
+			}
+			if (($index = array_search("", $counting_raises, true)) !== false) {
+				unset($counting_raises[$index]);
+			}
+
 			$misses[$scope_name] = [];
 			$correct[$scope_name] = [];
 			foreach ($counting_raises as $counting_raise) {
@@ -65,9 +74,14 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		if (file_exists($output_path . "/raises-annotated-specific.json") === true) {
 			die($output_path . "/raises-annotated-specific.json already exists");
 		} else {
-			file_put_contents($output_path . "/raises-annotated-specific.json", json_encode(array_filter($misses, function($item) {
-				return empty($item) === false;
-			}), JSON_PRETTY_PRINT));
+			file_put_contents($output_path . "/raises-annotated-specific.json", json_encode([
+				"misses" => array_filter($misses, function($item) {
+					return empty($item) === false;
+				}),
+				"correct" => array_filter($correct, function($item) {
+					return empty($item) === false;
+				}),
+			], JSON_PRETTY_PRINT));
 		}
 
 		if (file_exists($output_path . "/raises-annotated-numbers.json") === true) {

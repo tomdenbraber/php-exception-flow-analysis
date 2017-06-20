@@ -39,14 +39,11 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		}
 
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
+
+		unset($ef["{main}"]);
+
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$annotations = $annotations_file["Resolved Annotations"];
-		/*foreach ($annotations as $method => $types) {
-			foreach ($types as $type_1 => $type_2) {
-				$annotations[$method][strtolower($type_1)] = strtolower($type_2);
-				unset($annotations[$method][$type_1]);
-			}
-		}*/
 
 		$misses = [];
 		$correct = [];
@@ -64,6 +61,9 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 
 			$encounters = array_unique($encounters);
 			if (($index = array_search("unknown", $encounters)) !== false) {
+				unset($encounters[$index]);
+			}
+			if (($index = array_search("", $encounters)) !== false) {
 				unset($encounters[$index]);
 			}
 
@@ -91,9 +91,14 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		if (file_exists($output_path . "/encounters-annotated-specific.json") === true) {
 			die($output_path . "/encounters-annotated-specific.json already exists");
 		} else {
-			file_put_contents($output_path . "/encounters-annotated-specific.json", json_encode(array_filter($misses, function($item) {
-				return empty($item) === false;
-			}), JSON_PRETTY_PRINT));
+			file_put_contents($output_path . "/encounters-annotated-specific.json", json_encode([
+				"misses" => array_filter($misses, function($item) {
+					return empty($item) === false;
+				}),
+				"correct" => array_filter($correct, function($item) {
+					return empty($item) === false;
+				}),
+			], JSON_PRETTY_PRINT));
 		}
 
 

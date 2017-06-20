@@ -48,6 +48,8 @@ class AnalyseEncountersContractCommand extends Command {
 		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 
+		unset($ef["{main}"]);
+
 		$annotations = $annotations_file["Resolved Annotations"];
 		$misses = [];
 		$correct = [];
@@ -68,7 +70,10 @@ class AnalyseEncountersContractCommand extends Command {
 				$encounters = array_merge($encounters, $uncaught_exceptions);
 			}
 			$encounters = array_unique($encounters);
-			if (($index = array_search("unknown", $encounters)) !== false) {
+			if (($index = array_search("unknown", $encounters, true)) !== false) {
+				unset($encounters[$index]);
+			}
+			if (($index = array_search("", $encounters, true)) !== false) {
 				unset($encounters[$index]);
 			}
 
@@ -103,24 +108,71 @@ class AnalyseEncountersContractCommand extends Command {
 		if (file_exists($output_path . "/encounters-contract-specific.json") === true) {
 			die($output_path . "/encounters-contract-specific.json already exists");
 		} else {
-			file_put_contents($output_path . "/encounters-contract-specific.json", json_encode($misses, JSON_PRETTY_PRINT));
+			file_put_contents($output_path . "/encounters-contract-specific.json", json_encode([
+				"misses" => array_filter($misses, function($item) {
+					return empty($item) === false;
+				}),
+				"correct" => array_filter($correct, function($item) {
+					return empty($item) === false;
+				}),
+			], JSON_PRETTY_PRINT));
 		}
 
 
 		if (file_exists($output_path . "/encounters-contract-numbers.json") === true) {
 			die($output_path . "/encounters-contract-numbers.json already exists");
 		} else {
-			$unique_miss_count = 0;
-			$unique_correct_count = 0;
+			$methods_miss_count = 0;
+			$exceptions_miss_count = 0;
+			$violating_methods_count = 0;
+			$unique_violating_methods_count = 0;
+			$methods_correct_count = 0;
+			$exceptions_correct_count = 0;
+			$complying_methods_count = 0;
+			$unique_complying_methods_count = 0;
+
 			foreach ($misses as $function => $missed_for_fn) {
-				$unique_miss_count += count(array_keys($missed_for_fn));
+				if (empty($missed_for_fn) === true) {
+					continue;
+				}
+
+
+				$methods_miss_count += 1;
+				$exceptions_miss_count += count(array_keys($missed_for_fn));
+				$violating_merged = [];
+				foreach ($missed_for_fn as $exception => $violating_fns) {
+					$violating_methods_count += count($violating_fns);
+					$violating_merged = array_merge($violating_merged, $violating_fns);
+				}
+				$unique_violating_methods_count += count(array_unique($violating_merged));
 			}
 			foreach ($correct as $function => $correct_for_fn) {
-				$unique_correct_count += count(array_keys($correct_for_fn));
+				if (empty($correct_for_fn) === true) {
+					continue;
+				}
+
+				$methods_correct_count += 1;
+				$exceptions_correct_count += count(array_keys($correct_for_fn));
+				$complying_merged = [];
+				foreach ($correct_for_fn as $exception => $complying_fns) {
+					$complying_methods_count += count($complying_fns);
+					$complying_merged = array_merge($complying_merged, $complying_fns);
+				}
+				$unique_complying_methods_count += count(array_unique($complying_merged));
 			}
 			file_put_contents($output_path . "/encounters-contract-numbers.json", json_encode([
-				"correctly annotated" => $unique_correct_count,
-				"not annotated" => $unique_miss_count,
+				"misses" => [
+					"methods" => $methods_miss_count,
+					"exceptions" => $exceptions_miss_count,
+					"unique violating functions" => $unique_violating_methods_count,
+					"total violations" => $violating_methods_count,
+				],
+				"correct" => [
+					"methods" => $methods_correct_count,
+					"exceptions" => $exceptions_correct_count,
+					"unique complying functions" => $unique_complying_methods_count,
+					"total compliances" => $complying_methods_count,
+				]
 			], JSON_PRETTY_PRINT));
 		}
 

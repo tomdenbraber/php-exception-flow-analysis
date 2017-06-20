@@ -51,8 +51,8 @@ class AnalyseEncountersContractCommand extends Command {
 		unset($ef["{main}"]);
 
 		$annotations = $annotations_file["Resolved Annotations"];
-		$misses = [];
-		$correct = [];
+		$encountered_but_not_annotated = [];
+		$encountered_and_annotated = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			$method_order_scope_name = strtolower($scope_name);
@@ -80,26 +80,26 @@ class AnalyseEncountersContractCommand extends Command {
 
 			$ancestors = $method_order[$method_order_scope_name]["ancestors"];
 			foreach ($ancestors as $ancestor => $method_data) {
-				if ($method_data["abstract"] !== true) {
+				if ($method_order[$ancestor]["abstract"] !== true) {
 					continue;
 				}
 
-				if (isset($misses[$ancestor]) === false) {
-					$misses[$ancestor] = [];
-					$correct[$ancestor] = [];
+				if (isset($encountered_but_not_annotated[$ancestor]) === false) {
+					$encountered_but_not_annotated[$ancestor] = [];
+					$encountered_and_annotated[$ancestor] = [];
 				}
 
 				foreach ($encounters as $encounter) {
 					if (isset($annotations[$ancestor][$encounter]) === false && isset($annotations[$ancestor]["\\" . $encounter]) === false) {
-						if (isset($misses[$ancestor][$encounter]) === false) {
-							$misses[$ancestor][$encounter] = [];
+						if (isset($encountered_but_not_annotated[$ancestor][$encounter]) === false) {
+							$encountered_but_not_annotated[$ancestor][$encounter] = [];
 						}
-						$misses[$ancestor][$encounter][] = $scope_name;
+						$encountered_but_not_annotated[$ancestor][$encounter][] = $scope_name;
 					} else {
-						if (isset($correct[$ancestor][$encounter]) === false) {
-							$correct[$ancestor][$encounter] = [];
+						if (isset($encountered_and_annotated[$ancestor][$encounter]) === false) {
+							$encountered_and_annotated[$ancestor][$encounter] = [];
 						}
-						$correct[$ancestor][$encounter][] = $scope_name;
+						$encountered_and_annotated[$ancestor][$encounter][] = $scope_name;
 					}
 				}
 			}
@@ -109,10 +109,10 @@ class AnalyseEncountersContractCommand extends Command {
 			die($output_path . "/encounters-contract-specific.json already exists");
 		} else {
 			file_put_contents($output_path . "/encounters-contract-specific.json", json_encode([
-				"misses" => array_filter($misses, function($item) {
+				"encountered_but_not_annotated" => array_filter($encountered_but_not_annotated, function($item) {
 					return empty($item) === false;
 				}),
-				"correct" => array_filter($correct, function($item) {
+				"encountered_and_annotated" => array_filter($encountered_and_annotated, function($item) {
 					return empty($item) === false;
 				}),
 			], JSON_PRETTY_PRINT));
@@ -131,11 +131,10 @@ class AnalyseEncountersContractCommand extends Command {
 			$complying_methods_count = 0;
 			$unique_complying_methods_count = 0;
 
-			foreach ($misses as $function => $missed_for_fn) {
+			foreach ($encountered_but_not_annotated as $function => $missed_for_fn) {
 				if (empty($missed_for_fn) === true) {
 					continue;
 				}
-
 
 				$methods_miss_count += 1;
 				$exceptions_miss_count += count(array_keys($missed_for_fn));
@@ -146,7 +145,7 @@ class AnalyseEncountersContractCommand extends Command {
 				}
 				$unique_violating_methods_count += count(array_unique($violating_merged));
 			}
-			foreach ($correct as $function => $correct_for_fn) {
+			foreach ($encountered_and_annotated as $function => $correct_for_fn) {
 				if (empty($correct_for_fn) === true) {
 					continue;
 				}
@@ -161,13 +160,13 @@ class AnalyseEncountersContractCommand extends Command {
 				$unique_complying_methods_count += count(array_unique($complying_merged));
 			}
 			file_put_contents($output_path . "/encounters-contract-numbers.json", json_encode([
-				"misses" => [
+				"encountered but not annotated" => [
 					"methods" => $methods_miss_count,
 					"exceptions" => $exceptions_miss_count,
 					"unique violating functions" => $unique_violating_methods_count,
 					"total violations" => $violating_methods_count,
 				],
-				"correct" => [
+				"encountered and annotated" => [
 					"methods" => $methods_correct_count,
 					"exceptions" => $exceptions_correct_count,
 					"unique complying functions" => $unique_complying_methods_count,

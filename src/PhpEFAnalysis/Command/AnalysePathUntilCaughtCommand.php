@@ -58,22 +58,4 @@ class AnalysePathUntilCaughtCommand extends Command {
 			"path analysis" => $output_path . "/path-analysis.json",
 		]));
 	}
-
-	/**
-	 * @param $path
-	 * @return array
-	 */
-	private function analysePath(array $path) {
-		$path = array_slice($path, 0, count($path) - 1); //the last entry is a catches node, which is always of the same scope as the last scope in the entry
-		$res = [
-			"length" => count($path),
-			"raises" => 0,
-			"propagates" => 0,
-			"uncaught" => 0,
-		];
-		foreach ($path as $entry) {
-			$res[$entry["link"]] += 1;
-		}
-		return $res;
-	}
 }

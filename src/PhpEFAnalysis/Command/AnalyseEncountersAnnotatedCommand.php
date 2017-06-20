@@ -20,6 +20,11 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 				InputArgument::REQUIRED,
 				'A file containing the @throws annotations for each function/method')
 			->addArgument(
+				'methodOrderFile',
+				InputArgument::REQUIRED,
+				'A file containing a partial order of methods'
+			)
+			->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -29,6 +34,7 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
+		$method_order_file = $input->getArgument('methodOrderFile');
 		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
@@ -37,7 +43,11 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		if (!is_file($annotations_file) || pathinfo($annotations_file, PATHINFO_EXTENSION) !== "json") {
 			die($annotations_file . " is not a valid annotations file");
 		}
+		if (!is_file($method_order_file) || pathinfo($method_order_file, PATHINFO_EXTENSION) !== "json") {
+			die($method_order_file . " is not a valid method order file");
+		}
 
+		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
 
 		unset($ef["{main}"]);
@@ -50,6 +60,10 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		$annotated_and_not_encountered = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
+			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
+				continue;
+			}
+			
 			$encounters = $scope_data["raises"];
 
 			foreach ($scope_data["propagates"] as $scope => $propagated_exceptions) {
@@ -79,7 +93,6 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 					$encountered_and_annotated[$scope_name][] = $encounter;
 				}
 			}
-
 
 			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
 				if (in_array($annotated_exc, $encounters, true) === false && in_array(str_replace('\\', "", $annotated_exc), $encounters, true) === false) {

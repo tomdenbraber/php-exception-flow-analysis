@@ -114,9 +114,9 @@ class AnalyseAllCommand extends Command {
 		$path_analysis_cmd->run($path_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 
-		$raises_annotated_cmd->run($ef_and_annotations_input, $buffered_output);
+		$raises_annotated_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
-		$encounters_annotated_cmd->run($ef_and_annotations_input, $buffered_output);
+		$encounters_annotated_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$encounters_contract_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);

@@ -23,12 +23,19 @@ class AnalysePreliminaryCommand extends Command {
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
-			);
+			)
+			->addArgument(
+				'onlyAnalyseWithPrefix',
+				InputArgument::OPTIONAL,
+				"If this parameter is set, only scopes with a certain prefix are analysed"
+			);;
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$output_path = $input->getArgument('outputPath');
 		$ast_filepath = $input->getArgument('AstSystem');
+		$prefix = $input->getArgument("onlyAnalyseWithPrefix");
+
 		$ast_system = new AstSystem();
 		if (is_dir($ast_filepath)) {
 			foreach (glob($ast_filepath . "/*.cache") as $cache_file) {
@@ -41,7 +48,7 @@ class AnalysePreliminaryCommand extends Command {
 
 		$ast_traverser = new NodeTraverser();
 		$counter_iterator_factory = new CounterIteratorFactory();
-		$node_counters = $counter_iterator_factory->create();
+		$node_counters = $counter_iterator_factory->create($prefix);
 		foreach ($node_counters as $node_counter) {
 			$ast_traverser->addVisitor($node_counter);
 		}

@@ -18,7 +18,12 @@ class BuildAndAnalyseCommand extends Command {
 				"The path to the system to be analysed")
 			->addArgument("pathToOutputFolder",
 				InputArgument::REQUIRED,
-				"The pat to the output folder");
+				"The pat to the output folder")
+			->addArgument(
+				'onlyAnalyseWithPrefix',
+				InputArgument::OPTIONAL,
+				"If this parameter is set, only scopes with a certain prefix are analysed"
+			);
 	}
 
 	public function execute(InputInterface $input, OutputInterface $output) {
@@ -61,6 +66,7 @@ class BuildAndAnalyseCommand extends Command {
 			"AstSystem" => $paths["ast system cache"],
 			"pathToCatchClauses" => $paths["path to catch clauses"],
 			"outputPath" => $project_results_path,
+			"onlyAnalyseWithPrefix" => $input->getArgument("onlyAnalyseWithPrefix"),
 		]);
 		$analyse_all->run($analyse_all_input, $buffered_output);
 

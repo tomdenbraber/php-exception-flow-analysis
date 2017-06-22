@@ -8,7 +8,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 class AnalyseCatchBySubsumptionCommand extends Command {
 
-private $count = 0;
 	public function configure() {
 		$this->setName("analysis:catch-by-subsumption")
 			->setDescription("Analyse the amount of exceptions that are caught by subsumption")
@@ -86,20 +85,19 @@ private $count = 0;
 				$catch_clause_type = strtolower($type);
 
 				$distance_to_root = $this->calculateDistanceBetween("throwable", $catch_clause_type, $class_hiearchy);
-				if (isset($catch_clause_distances["catch clause type to root"]["" . $distance_to_root]) === false) {
-					$catch_clause_distances["catch clause type to root"]["" . $distance_to_root] = 0;
+				$distance_to_root_str =  "" . $distance_to_root;
+				if (isset($catch_clause_distances["catch clause type to root"][$distance_to_root_str]) === false) {
+					$catch_clause_distances["catch clause type to root"][$distance_to_root_str] = 0;
 				}
-				$catch_clause_distances["catch clause type to root"]["" . $distance_to_root] += 1;
-
-				$this->count++;
-
+				$catch_clause_distances["catch clause type to root"][$distance_to_root_str] += 1;
 
 				foreach ($caught_types as $caught_type) {
-					$distance = $this->calculateDistanceBetween($catch_clause_type, $caught_type, $class_hiearchy);
-					if (isset($catch_clause_distances["catch clause to caught type"]["" . $distance]) === false) {
-						$catch_clause_distances["catch clause to caught type"]["" . $distance] = 0;
+					$distance_to_catch_type = $this->calculateDistanceBetween($catch_clause_type, $caught_type, $class_hiearchy);
+					$distance_to_catch_type_str =  "" . $distance_to_catch_type;
+					if (isset($catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str]) === false) {
+						$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str] = 0;
 					}
-					$catch_clause_distances["catch clause to caught type"]["" . $distance] += 1;
+					$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str] += 1;
 				}
 			}
 

@@ -116,7 +116,7 @@ class AnalyseAllCommand extends Command {
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$obsolete_catch_cmd->run($ef_and_class_hierarchy, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
-		$catch_by_sub_cmd->run($ef_input, $buffered_output);
+		$catch_by_sub_cmd->run($ef_and_class_hierarchy, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$path_analysis_cmd->run($path_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);

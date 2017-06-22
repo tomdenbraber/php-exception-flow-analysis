@@ -551,7 +551,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-exception-flow",
-                "reference": "f3c68709206851acf71ec318c671f08c242fece0"
+                "reference": "e803922c9dd5af37e851fb859b818fa7aed1d09c"
             },
             "require": {
                 "ircmaxell/php-cfg": "dev-master",
@@ -575,7 +575,7 @@
                 }
             ],
             "description": "Exception Flow Library for PHP",
-            "time": "2017-06-20 12:19:36"
+            "time": "2017-06-21 13:39:15"
         },
         {
             "name": "tomdenbraber/php-exception-preliminary-analysis",

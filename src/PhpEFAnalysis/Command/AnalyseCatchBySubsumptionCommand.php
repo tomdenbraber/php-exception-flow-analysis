@@ -64,8 +64,6 @@ private $count = 0;
 			}
 		}
 
-		print $this->count . " catch clauses";
-
 		if (file_exists($output_path . "/catch-by-subsumption.json") === true) {
 			die($output_path . "/catch-by-subsumption.json already exists");
 		} else {
@@ -85,10 +83,6 @@ private $count = 0;
 			$inclosed_scope_name = array_pop($inclosed_scope_name_arr); //there can only be one;
 
 			foreach ($guarded_scope_data["catch clauses"] as $type => $caught_types) {
-
-				print sprintf("%s <%s>\n", $guarded_scope_name, $type);
-
-
 				$catch_clause_type = strtolower($type);
 
 				$distance_to_root = $this->calculateDistanceBetween("throwable", $catch_clause_type, $class_hiearchy);

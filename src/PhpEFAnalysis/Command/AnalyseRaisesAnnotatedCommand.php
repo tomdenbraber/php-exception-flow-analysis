@@ -77,7 +77,6 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 				if (isset($annotations[$scope_name][$counting_raise]) === false && isset($annotations[$scope_name]['\\' . $counting_raise]) === false) {
 					//not documented, so add to misses
 					$misses[$scope_name][] = $counting_raise;
-					print $scope_name . " did not annotate " . '\\' . $counting_raise . "\n";
 				} else {
 					$correct[$scope_name][] = $counting_raise;
 				}

@@ -33,6 +33,7 @@ class AnalysePathUntilCaughtCommand extends Command {
 
 		$complete_path_analysis = [
 			"lengths" => [],
+			"lengths counts" => [],
 		];
 
 		$paths_until_caught = json_decode(file_get_contents($path_to_catch_clauses_file), $assoc = true);
@@ -41,12 +42,22 @@ class AnalysePathUntilCaughtCommand extends Command {
 			foreach ($exception_paths as $exception_type => $path) {
 				$path = array_slice($path, 0, count($path) - 1); //the last entry is a catches node, which is always of the same scope as the last scope in the entry
 				$length = count($path);
-				if (isset($complete_path_analysis["lengths"][$length]) === false) {
-					$complete_path_analysis["lengths"][$length] = 0;
+				if (isset($complete_path_analysis["lengths counts"][$length]) === false) {
+					$complete_path_analysis["lengths counts"][$length] = 0;
+					$complete_path_analysis["lengths"][$length] = [];
 				}
-				$complete_path_analysis["lengths"][$length] += 1;
+				$complete_path_analysis["lengths counts"][$length] += 1;
+				$complete_path_analysis["lengths"][$length][] = [
+					"start" => $path[0],
+					"end" => $path[count($path) - 1],
+					"type" => $exception_type
+				];
+
 			}
 		}
+
+		ksort($complete_path_analysis["lengths"]);
+		ksort($complete_path_analysis["lengths counts"]);
 
 		if (file_exists($output_path . "/path-analysis.json") === true) {
 			die($output_path . "/path-analysis.json already exists");

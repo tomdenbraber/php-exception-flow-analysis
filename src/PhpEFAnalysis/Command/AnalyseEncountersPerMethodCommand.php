@@ -37,7 +37,13 @@ class AnalyseEncountersPerMethodCommand extends Command {
 			die($method_order_file . " is not a valid method order file");
 		}
 
-		$exception_count = [];
+		$exception_count = [
+			"unique root counts" => [],
+			"unique type counts" => [],
+			"unique root methods" => [],
+			"unique type methods" => [],
+			"exception type counts" => [], //how often an exception occurs, is actually kinda independent of methods.
+		];
 
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
 		$method_data = json_decode(file_get_contents($method_order_file), $assoc = true);
@@ -47,19 +53,45 @@ class AnalyseEncountersPerMethodCommand extends Command {
 			}
 			$scope_encounters = $this->gatherForScope($scope_data);
 			$scope_encounters_count = count($scope_encounters);
-			if (isset($exception_count[$scope_encounters_count]) === false) {
-				$exception_count["" . $scope_encounters_count] = 1;
+			if (isset($exception_count["unique root counts"][$scope_encounters_count]) === false) {
+				$exception_count["unique root counts"]["" . $scope_encounters_count] = 1;
+				$exception_count["unique root methods"]["" . $scope_encounters_count] = [$scope];
+
 			} else {
-				$exception_count["" . $scope_encounters_count] += 1;
+				$exception_count["unique root counts"]["" . $scope_encounters_count] += 1;
+				$exception_count["unique root methods"]["" . $scope_encounters_count][] = $scope;
+			}
+
+			foreach($scope_encounters as $exception) {
+				if (isset($exception_count["exception type counts"][$exception]) === false) {
+					$exception_count["exception type counts"][$exception] = 0;
+				}
+				$exception_count["exception type counts"][$exception] += 1;
+			}
+
+
+			$scope_encounters_unique_type = array_unique($scope_encounters);
+			$scope_encounters_unique_type_count = count($scope_encounters_unique_type);
+			if (isset($exception_count["unique type counts"][$scope_encounters_unique_type_count]) === false) {
+				$exception_count["unique type counts"]["" . $scope_encounters_unique_type_count] = 1;
+				$exception_count["unique type methods"]["" . $scope_encounters_unique_type_count] = [$scope];
+
+			} else {
+				$exception_count["unique type counts"]["" . $scope_encounters_unique_type_count] += 1;
+				$exception_count["unique type methods"]["" . $scope_encounters_unique_type_count][] = $scope;
 			}
 		}
 
-		ksort($exception_count);
+		ksort($exception_count["unique root counts"]);
+		ksort($exception_count["unique type counts"]);
+		ksort($exception_count["unique root methods"]);
+		ksort($exception_count["unique type methods"]);
+		arsort($exception_count["exception type counts"]);
 
 		if (file_exists($output_path . "/encounters-per-method.json") === true) {
 			die($output_path . "/encounters-per-method.json already exists");
 		} else {
-			file_put_contents($output_path . "/encounters-per-method.json", json_encode($exception_count, JSON_FORCE_OBJECT|JSON_PRETTY_PRINT ));
+			file_put_contents($output_path . "/encounters-per-method.json", json_encode($exception_count, JSON_PRETTY_PRINT ));
 			$output->write(json_encode(["encounters per method" => $output_path . "/encounters-per-method.json"]));
 		}
 	}

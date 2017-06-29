@@ -13,7 +13,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-cfg",
-                "reference": "d46d3509ff85b2a6d3a13fed9af3a467c183f46c"
+                "reference": "097f6220d0617082339e0ca195117b0d9bc45c4d"
             },
             "require": {
                 "nikic/php-parser": "^2.0",
@@ -40,7 +40,7 @@
                 }
             ],
             "description": "A Control Flow Graph implementation for PHP",
-            "time": "2017-05-15 14:22:56"
+            "time": "2017-06-27 15:09:12"
         },
         {
             "name": "ircmaxell/php-types",
@@ -48,7 +48,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-types",
-                "reference": "2ee45cceaaa26808f25b334bd837b2d68e1e34ac"
+                "reference": "29f061f5f299527d7171e0570e4239507d86ee01"
             },
             "require": {
                 "ircmaxell/php-cfg": "dev-master",
@@ -74,7 +74,7 @@
                 }
             ],
             "description": "A PHP CFG Type Inference / Reconstruction Engine",
-            "time": "2017-05-15 14:24:09"
+            "time": "2017-06-27 15:10:59"
         },
         {
             "name": "nikic/php-parser",
@@ -551,7 +551,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-exception-flow",
-                "reference": "e803922c9dd5af37e851fb859b818fa7aed1d09c"
+                "reference": "9406c63d64901381b86aef7677b2c1bf9c16ff56"
             },
             "require": {
                 "ircmaxell/php-cfg": "dev-master",
@@ -575,7 +575,7 @@
                 }
             ],
             "description": "Exception Flow Library for PHP",
-            "time": "2017-06-21 13:39:15"
+            "time": "2017-06-29 08:10:23"
         },
         {
             "name": "tomdenbraber/php-exception-preliminary-analysis",
@@ -583,7 +583,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-exception-preliminary-analysis",
-                "reference": "1c7c29e6bb3d6bbc91967b37d02f722d2cc8a528"
+                "reference": "8a16b3543ccac3b9af25149b697ecc92b05f1aae"
             },
             "require": {
                 "nikic/php-parser": "^2.0",
@@ -605,7 +605,7 @@
                 }
             ],
             "description": "A collection of utility classes for analysing exception language constructs in PHP programs",
-            "time": "2017-06-21 13:05:57"
+            "time": "2017-06-29 08:07:00"
         },
         {
             "name": "tomdenbraber/php-throws-annotation-collector",
@@ -613,7 +613,7 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/tomdenbraber/php-throws-annotation-collector",
-                "reference": "74b8c1960e3774e81cea2530a88c3f1d81119a1b"
+                "reference": "f1f53eda22c0653d76209643fbc327720ae26b54"
             },
             "require": {
                 "nikic/php-parser": "^2.0",
@@ -636,7 +636,7 @@
                 }
             ],
             "description": "Provides utility classes for extracting @throws annotations from PHP software projects",
-            "time": "2017-06-19 14:52:59"
+            "time": "2017-06-29 08:11:45"
         },
         {
             "name": "webmozart/assert",
@@ -1100,16 +1100,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "5.7.20",
+            "version": "5.7.21",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "3cb94a5f8c07a03c8b7527ed7468a2926203f58b"
+                "reference": "3b91adfb64264ddec5a2dee9851f354aa66327db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/3cb94a5f8c07a03c8b7527ed7468a2926203f58b",
-                "reference": "3cb94a5f8c07a03c8b7527ed7468a2926203f58b",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/3b91adfb64264ddec5a2dee9851f354aa66327db",
+                "reference": "3b91adfb64264ddec5a2dee9851f354aa66327db",
                 "shasum": ""
             },
             "require": {
@@ -1178,7 +1178,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2017-05-22 07:42:55"
+            "time": "2017-06-21 08:11:54"
         },
         {
             "name": "phpunit/phpunit-mock-objects",

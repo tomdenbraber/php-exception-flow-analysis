@@ -52,13 +52,16 @@ class AnalyseAllCommand extends Command {
 
 		$prefix = $input->getArgument("onlyAnalyseWithPrefix");
 		if ($prefix !== null && empty($prefix) === false) {
+			$prefix = strtolower($prefix);
 			$exception_flow_dump = $this->prepareFile($input->getArgument("exceptionFlowFile"), $prefix);
 			$method_order_dump = $this->prepareFile($input->getArgument("methodOrderFile"), $prefix);
+			$annotations_dump = $this->prepareFile($input->getArgument("annotationsFile"), $prefix);
 			$catch_paths_dump = $this->prepareFile($input->getArgument("pathToCatchClauses"), $prefix);
 		}
 
-		$ast_input = new ArrayInput([
+		$prelim_input = new ArrayInput([
 			"AstSystem" => $input->getArgument("AstSystem"),
+			"annotationsFile" => $input->getArgument("annotationsFile"),
 			"outputPath" => $input->getArgument("outputPath"),
 			"onlyAnalyseWithPrefix" => $input->getArgument("onlyAnalyseWithPrefix"),
 		]);
@@ -107,7 +110,7 @@ class AnalyseAllCommand extends Command {
 		$encounters_annotated_cmd = $app->find("analysis:encounters-annotated");
 		$encounters_contract_cmd = $app->find("analysis:encounters-contract");
 
-		$preliminary_cmd->run($ast_input, $buffered_output);
+		$preliminary_cmd->run($prelim_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 
 		$no_encounters_cmd->run($ef_and_method_order, $buffered_output);
@@ -132,6 +135,7 @@ class AnalyseAllCommand extends Command {
 			 $this->restoreFile($input->getArgument("exceptionFlowFile"), $exception_flow_dump);
 			 $this->restoreFile($input->getArgument("methodOrderFile"), $method_order_dump);
 			 $this->restoreFile($input->getArgument("pathToCatchClauses"), $catch_paths_dump);
+			 $this->restoreFile($input->getArgument("annotationsFile"), $annotations_dump);
 		}
 
 		$output->write(json_encode($created_paths));

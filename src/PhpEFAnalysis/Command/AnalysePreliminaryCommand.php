@@ -20,6 +20,11 @@ class AnalysePreliminaryCommand extends Command {
 				InputArgument::REQUIRED,
 				'An AstSystem (collection of nodes) of the program to be analysed')
 			->addArgument(
+				'annotationsFile',
+				InputArgument::REQUIRED,
+				'A file containing the @throws annotations for each function/method'
+			)
+			->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -34,7 +39,30 @@ class AnalysePreliminaryCommand extends Command {
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$output_path = $input->getArgument('outputPath');
 		$ast_filepath = $input->getArgument('AstSystem');
+		$annotations_filepath = $input->getArgument('annotationsFile');
 		$prefix = $input->getArgument("onlyAnalyseWithPrefix");
+		if (empty($prefix) || trim($prefix) === "") {
+			$prefix = null;
+		}
+
+
+		print "prefix:" . $prefix . strlen($prefix) . "\n";
+
+		if (!is_file($annotations_filepath) || pathinfo($annotations_filepath, PATHINFO_EXTENSION) !== "json") {
+			die($annotations_filepath . " is not a valid annotations file");
+		}
+
+		$annotations = json_decode(file_get_contents($annotations_filepath), $assoc = true);
+
+		$annotated_methods = 0;
+		$resolved_annotations_count = 0;
+
+		foreach ($annotations as $method => $annotations_for_method) {
+			$resolved_annotations_count += count($annotations_for_method);
+			if (empty($annotations_for_method) === false) {
+				$annotated_methods += 1;
+			}
+		}
 
 		$ast_system = new AstSystem();
 		if (is_dir($ast_filepath)) {
@@ -62,8 +90,11 @@ class AnalysePreliminaryCommand extends Command {
 			$counts[array_pop($type_splitted)] = $node_counter->getCount();
 		}
 
+		$counts["resolved throws annotations"] = $resolved_annotations_count;
+		$counts["methods with >= 1 annotation"] = $annotated_methods;
+
 		if (file_exists($output_path . "/preliminary_analysis.json") === true) {
-			die($output_path . "/throws_annotations.json already exists");
+			die($output_path . "/preliminary_analysis.json already exists");
 		} else {
 			file_put_contents($output_path . "/preliminary_analysis.json",json_encode($counts, JSON_PRETTY_PRINT));
 			$output->write(json_encode(["preliminary analysis" => $output_path . "/preliminary_analysis.json"]));

@@ -48,11 +48,22 @@ class BuildAnnotationsSetCommand extends Command {
 		$system_traverser->traverse($ast_system);
 		$annotation_printer = new JsonPrinter();
 
+		$annotations = $annotation_printer->printAnnotations($annotation_collector->getAnnotations());
+
 		if (file_exists($output_path . "/throws_annotations.json") === true) {
 			die($output_path . "/throws_annotations.json already exists");
 		} else {
-			file_put_contents($output_path . "/throws_annotations.json", $annotation_printer->printAnnotations($annotation_collector->getAnnotations()));
-			$output->write(json_encode(["throws annotation set" => $output_path . "/throws_annotations.json"]));
+			file_put_contents($output_path . "/throws_annotations.json", json_encode($annotations["Resolved Annotations"], JSON_PRETTY_PRINT));
 		}
+
+		if (file_exists($output_path . "/throws_annotations_unresolved.json") === true) {
+			die($output_path . "/throws_annotations_unresolved.json already exists");
+		} else {
+			file_put_contents($output_path . "/throws_annotations_unresolved.json", json_encode($annotations["Unresolved Annotations"], JSON_PRETTY_PRINT));
+		}
+		$output->write(json_encode([
+			"throws annotation set (unresolved)" => $output_path . "/throws_annotations_unresolved.json",
+			"throws annotation set" => $output_path . "/throws_annotations.json"
+		]));
 	}
 }

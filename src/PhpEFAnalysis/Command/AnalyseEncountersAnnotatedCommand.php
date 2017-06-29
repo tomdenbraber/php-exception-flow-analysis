@@ -52,8 +52,7 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 
 		unset($ef["{main}"]);
 
-		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
-		$annotations = $annotations_file["Resolved Annotations"];
+		$annotations = json_decode(file_get_contents($annotations_file), $assoc = true);
 
 		$encountered_and_not_annotated = [];
 		$encountered_and_annotated = [];

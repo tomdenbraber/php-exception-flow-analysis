@@ -49,9 +49,8 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		}
 
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
-		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
+		$annotations = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
-		$annotations = $annotations_file["Resolved Annotations"];
 
 		unset($ef["{main}"]);
 

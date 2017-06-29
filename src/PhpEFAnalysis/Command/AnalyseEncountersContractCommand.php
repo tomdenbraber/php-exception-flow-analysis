@@ -45,12 +45,11 @@ class AnalyseEncountersContractCommand extends Command {
 		}
 
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
-		$annotations_file = json_decode(file_get_contents($annotations_file), $assoc = true);
+		$annotations = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 
 		unset($ef["{main}"]);
 
-		$annotations = $annotations_file["Resolved Annotations"];
 		$encountered_but_not_annotated = [];
 		$encountered_and_annotated = [];
 		$annotated_and_not_encountered = []; //counts all exceptions that are annotated on an abstract method, but never encountered.
@@ -84,7 +83,10 @@ class AnalyseEncountersContractCommand extends Command {
 
 			$ancestors = $method_order[$method_order_scope_name]["ancestors"];
 			foreach ($ancestors as $ancestor => $method_data) {
-				if ($method_order[$ancestor]["abstract"] !== true) {
+				if (
+					isset($method_order[$ancestor]) === false || //can happen because of prefixes.
+					$method_order[$ancestor]["abstract"] !== true
+				) {
 					continue;
 				}
 
@@ -116,8 +118,11 @@ class AnalyseEncountersContractCommand extends Command {
 
 			$contractual_annotations = $annotations[$method];
 			foreach ($method_data["descendants"] as $descendant) {
-				if ($method_order[$descendant]["abstract"] === true) {
-					continue; //abstract child cannot violate contract
+				if (
+					isset($method_order[$descendant]) === false ||         //this child has been left out because of a prefix
+					$method_order[$descendant]["abstract"] === true //abstract child cannot violate contract
+				) {
+					continue;
 				}
 
 				foreach ($contractual_annotations as $annotation) {

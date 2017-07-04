@@ -66,6 +66,12 @@ class AnalyseAllCommand extends Command {
 			"onlyAnalyseWithPrefix" => $input->getArgument("onlyAnalyseWithPrefix"),
 		]);
 
+		$annotations_and_method_order_input = new ArrayInput([
+			"annotationsFile" => $input->getArgument("annotationsFile"),
+			"methodOrderFile" => $input->getArgument("methodOrderFile"),
+			"outputPath" => $input->getArgument("outputPath"),
+		]);
+
 		$ef_input = new ArrayInput([
 			"exceptionFlowFile" => $input->getArgument("exceptionFlowFile"),
 			"outputPath" => $input->getArgument("outputPath"),
@@ -99,6 +105,7 @@ class AnalyseAllCommand extends Command {
 		$created_paths = [];
 
 		$preliminary_cmd = $app->find("analysis:preliminary");
+		$annotations_diff_cmd = $app->find("analysis:annotations-difference-abstract-implementation");
 
 		$no_encounters_cmd = $app->find("analysis:encounters-per-method");
 		$obsolete_try_cmd = $app->find("analysis:obsolete-try-blocks");
@@ -112,6 +119,8 @@ class AnalyseAllCommand extends Command {
 		$encounters_contract_cmd = $app->find("analysis:encounters-contract");
 
 		$preliminary_cmd->run($prelim_input, $buffered_output);
+		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
+		$annotations_diff_cmd->run($annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 
 		$no_encounters_cmd->run($ef_and_method_order, $buffered_output);

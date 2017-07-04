@@ -15,6 +15,7 @@ use \PhpEFAnalysis\Command\AnalysePathUntilCaughtCommand;
 use \PhpEFAnalysis\Command\BuildAnnotationsSetCommand;
 use \PhpEFAnalysis\Command\BuildExceptionFlowCommand;
 use \PhpEFAnalysis\Command\AnalysePreliminaryCommand;
+use \PhpEFAnalysis\Command\AnalyseDifferenceBetweenAbstractAndImplementationCommand;
 use \PhpEFAnalysis\Command\BuildAndAnalyseCommand;
 
 $application = new Application();
@@ -30,6 +31,7 @@ $application->add(new AnalyseAnnotatedButNotEncountered());
 $application->add(new AnalyseEncountersContractCommand());
 
 $application->add(new AnalysePreliminaryCommand());
+$application->add(new AnalyseDifferenceBetweenAbstractAndImplementationCommand());
 $application->add(new BuildAnnotationsSetCommand());
 
 $application->add(new BuildExceptionFlowCommand());

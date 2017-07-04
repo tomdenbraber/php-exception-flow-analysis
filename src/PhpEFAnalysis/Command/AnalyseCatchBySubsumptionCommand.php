@@ -63,10 +63,13 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			}
 		}
 
+		ksort($caught_exception_type_distance_to_caught["catch clause type to root"]);
+		ksort($caught_exception_type_distance_to_caught["catch clause to caught type"]);
+
 		if (file_exists($output_path . "/catch-by-subsumption.json") === true) {
 			die($output_path . "/catch-by-subsumption.json already exists");
 		} else {
-			file_put_contents($output_path . "/catch-by-subsumption.json", json_encode($caught_exception_type_distance_to_caught, JSON_PRETTY_PRINT));
+			file_put_contents($output_path . "/catch-by-subsumption.json", json_encode($caught_exception_type_distance_to_caught, JSON_PRETTY_PRINT|JSON_FORCE_OBJECT));
 			$output->write(json_encode(["catch by subsumption" => $output_path . "/catch-by-subsumption.json"]));
 		}
 	}

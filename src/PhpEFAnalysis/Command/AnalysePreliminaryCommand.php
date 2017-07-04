@@ -45,9 +45,6 @@ class AnalysePreliminaryCommand extends Command {
 			$prefix = null;
 		}
 
-
-		print "prefix:" . $prefix . strlen($prefix) . "\n";
-
 		if (!is_file($annotations_filepath) || pathinfo($annotations_filepath, PATHINFO_EXTENSION) !== "json") {
 			die($annotations_filepath . " is not a valid annotations file");
 		}

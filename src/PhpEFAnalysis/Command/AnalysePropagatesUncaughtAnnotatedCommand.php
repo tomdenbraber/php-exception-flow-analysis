@@ -7,9 +7,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class AnalyseEncountersAnnotatedCommand extends Command {
+class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 	public function configure() {
-		$this->setName("analysis:encounters-annotated")
+		$this->setName("analysis:propagates-uncaught-annotated")
 			->setDescription("Analyse how often an actual encountered exception is not documented ")
 			->addArgument(
 				'exceptionFlowFile',
@@ -62,29 +62,29 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
 				continue;
 			}
-			
-			$encounters = $scope_data["raises"];
+
+			$propagated_or_uncaught = [];
 
 			foreach ($scope_data["propagates"] as $scope => $propagated_exceptions) {
-				$encounters = array_merge($encounters, $propagated_exceptions);
+				$propagated_or_uncaught = array_merge($propagated_or_uncaught, $propagated_exceptions);
 			}
 
 			foreach ($scope_data["uncaught"] as $guarded_scope => $uncaught_exceptions) {
-				$encounters = array_merge($encounters, $uncaught_exceptions);
+				$propagated_or_uncaught = array_merge($propagated_or_uncaught, $uncaught_exceptions);
 			}
 
-			$encounters = array_unique($encounters);
-			if (($index = array_search("unknown", $encounters)) !== false) {
-				unset($encounters[$index]);
+			$propagated_or_uncaught = array_unique($propagated_or_uncaught);
+			if (($index = array_search("unknown", $propagated_or_uncaught)) !== false) {
+				unset($propagated_or_uncaught[$index]);
 			}
-			if (($index = array_search("", $encounters)) !== false) {
-				unset($encounters[$index]);
+			if (($index = array_search("", $propagated_or_uncaught)) !== false) {
+				unset($propagated_or_uncaught[$index]);
 			}
 
 			$encountered_and_not_annotated[$scope_name] = [];
 			$encountered_and_annotated[$scope_name] = [];
 			$annotated_and_not_encountered[$scope_name] = [];
-			foreach ($encounters as $encounter) {
+			foreach ($propagated_or_uncaught as $encounter) {
 				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]['\\' . $encounter]) === false) {
 					//not documented, so add to encountered_and_not_annotated
 					$encountered_and_not_annotated[$scope_name][] = $encounter;
@@ -94,7 +94,7 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			}
 
 			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
-				if (in_array($annotated_exc, $encounters, true) === false && in_array(str_replace('\\', "", $annotated_exc), $encounters, true) === false) {
+				if (in_array($annotated_exc, $propagated_or_uncaught, true) === false && in_array(str_replace('\\', "", $annotated_exc), $propagated_or_uncaught, true) === false) {
 					$annotated_and_not_encountered[$scope_name][] = $annotated_exc;
 				}
 			}
@@ -114,10 +114,10 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 			$count_annotated_and_not_encountered += count($annotations);
 		}
 
-		if (file_exists($output_path . "/encounters-annotated-specific.json") === true) {
-			die($output_path . "/encounters-annotated-specific.json already exists");
+		if (file_exists($output_path . "/propagated-or-uncaught-annotated-specific.json") === true) {
+			die($output_path . "/propagated-or-uncaught-annotated-specific.json already exists");
 		} else {
-			file_put_contents($output_path . "/encounters-annotated-specific.json", json_encode([
+			file_put_contents($output_path . "/propagated-or-uncaught-annotated-specific.json", json_encode([
 				"encountered and not annotated" => array_filter($encountered_and_not_annotated, function($item) {
 					return empty($item) === false;
 				}),
@@ -131,10 +131,10 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		}
 
 
-		if (file_exists($output_path . "/encounters-annotated-numbers.json") === true) {
-			die($output_path . "/encounters-annotated-numbers.json already exists");
+		if (file_exists($output_path . "/propagated-or-uncaught-annotated-numbers.json") === true) {
+			die($output_path . "/propagated-or-uncaught-annotated-numbers.json already exists");
 		} else {
-			file_put_contents($output_path . "/encounters-annotated-numbers.json", json_encode([
+			file_put_contents($output_path . "/propagated-or-uncaught-annotated-numbers.json", json_encode([
 				"correctly annotated" => $count_encountered_and_annotated,
 				"not annotated" => $count_encountered_and_not_annotated,
 				"annotated and not encountered" => $count_annotated_and_not_encountered,
@@ -142,8 +142,8 @@ class AnalyseEncountersAnnotatedCommand extends Command {
 		}
 
 		$output->write(json_encode([
-			"encounters annotated specific" => $output_path . "/encounters-annotated-specific.json",
-			"encounters annotated numbers" => $output_path . "/encounters-annotated-numbers.json",
+			"propagated or uncaught annotated specific" => $output_path . "/propagated-or-uncaught-annotated-specific.json",
+			"propagated or uncaught annotated numbers" => $output_path . "/propagated-or-uncaught-annotated-numbers.json",
 		]));
 	}
 }

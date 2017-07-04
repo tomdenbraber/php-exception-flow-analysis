@@ -8,7 +8,7 @@ use \PhpEFAnalysis\Command\AnalyseObsoleteTryBlocksCommand;
 use \PhpEFAnalysis\Command\AnalyseObsoleteCatchBlocksCommand;
 use \PhpEFAnalysis\Command\AnalyseCatchBySubsumptionCommand;
 use \PhpEFAnalysis\Command\AnalyseRaisesAnnotatedCommand;
-use \PhpEFAnalysis\Command\AnalyseEncountersAnnotatedCommand;
+use \PhpEFAnalysis\Command\AnalysePropagatesUncaughtAnnotatedCommand;
 use \PhpEFAnalysis\Command\AnalyseEncountersContractCommand;
 use \PhpEFAnalysis\Command\AnalysePathUntilCaughtCommand;
 use \PhpEFAnalysis\Command\BuildAnnotationsSetCommand;
@@ -24,7 +24,7 @@ $application->add(new AnalyseObsoleteCatchBlocksCommand());
 $application->add(new AnalyseCatchBySubsumptionCommand());
 $application->add(new AnalysePathUntilCaughtCommand());
 $application->add(new AnalyseRaisesAnnotatedCommand());
-$application->add(new AnalyseEncountersAnnotatedCommand());
+$application->add(new AnalysePropagatesUncaughtAnnotatedCommand());
 $application->add(new AnalyseEncountersContractCommand());
 
 $application->add(new AnalysePreliminaryCommand());

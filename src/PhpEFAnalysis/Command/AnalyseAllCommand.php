@@ -108,6 +108,7 @@ class AnalyseAllCommand extends Command {
 
 		$raises_annotated_cmd = $app->find("analysis:raises-annotated");
 		$propagates_uncaught_annotated_cmd = $app->find("analysis:propagates-uncaught-annotated");
+		$annotated_not_encountered_cmd = $app->find("analysis:annotated-not-encountered");
 		$encounters_contract_cmd = $app->find("analysis:encounters-contract");
 
 		$preliminary_cmd->run($prelim_input, $buffered_output);
@@ -127,6 +128,8 @@ class AnalyseAllCommand extends Command {
 		$raises_annotated_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$propagates_uncaught_annotated_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
+		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
+		$annotated_not_encountered_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$encounters_contract_cmd->run($ef_and_annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);

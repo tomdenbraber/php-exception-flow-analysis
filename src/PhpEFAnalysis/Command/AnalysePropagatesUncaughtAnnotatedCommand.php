@@ -56,7 +56,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 
 		$encountered_and_not_annotated = [];
 		$encountered_and_annotated = [];
-		$annotated_and_not_encountered = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
@@ -83,7 +82,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 
 			$encountered_and_not_annotated[$scope_name] = [];
 			$encountered_and_annotated[$scope_name] = [];
-			$annotated_and_not_encountered[$scope_name] = [];
 			foreach ($propagated_or_uncaught as $encounter) {
 				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]['\\' . $encounter]) === false) {
 					//not documented, so add to encountered_and_not_annotated
@@ -92,13 +90,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 					$encountered_and_annotated[$scope_name][] = $encounter;
 				}
 			}
-
-			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
-				if (in_array($annotated_exc, $propagated_or_uncaught, true) === false && in_array(str_replace('\\', "", $annotated_exc), $propagated_or_uncaught, true) === false) {
-					$annotated_and_not_encountered[$scope_name][] = $annotated_exc;
-				}
-			}
-
 		}
 
 		$count_encountered_and_not_annotated = 0;
@@ -109,11 +100,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 		foreach ($encountered_and_annotated as $fn => $exceptions) {
 			$count_encountered_and_annotated += count($exceptions);
 		}
-		$count_annotated_and_not_encountered = 0;
-		foreach ($annotated_and_not_encountered as $fn => $annotations) {
-			$count_annotated_and_not_encountered += count($annotations);
-		}
-
 		if (file_exists($output_path . "/propagated-or-uncaught-annotated-specific.json") === true) {
 			die($output_path . "/propagated-or-uncaught-annotated-specific.json already exists");
 		} else {
@@ -122,9 +108,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 					return empty($item) === false;
 				}),
 				"encountered and annotated" => array_filter($encountered_and_annotated, function($item) {
-					return empty($item) === false;
-				}),
-				"annotated and not encountered" => array_filter($annotated_and_not_encountered, function($item) {
 					return empty($item) === false;
 				}),
 			], JSON_PRETTY_PRINT));
@@ -137,7 +120,6 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 			file_put_contents($output_path . "/propagated-or-uncaught-annotated-numbers.json", json_encode([
 				"correctly annotated" => $count_encountered_and_annotated,
 				"not annotated" => $count_encountered_and_not_annotated,
-				"annotated and not encountered" => $count_annotated_and_not_encountered,
 			], JSON_PRETTY_PRINT));
 		}
 

@@ -81,7 +81,9 @@ class AnalyseAnnotatedButNotEncountered extends Command {
 
 			$annotated_and_not_encountered[$scope_name] = [];
 			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
-				if (in_array($annotated_exc, $encountered, true) === false && in_array(str_replace('\\', "", $annotated_exc), $encountered, true) === false) {
+				if (in_array($annotated_exc, $encountered, true) === false &&
+					in_array(substr($annotated_exc, 1), $encountered, true) === false) //without prefixed \
+				{
 					$annotated_and_not_encountered[$scope_name][] = $annotated_exc;
 				}
 			}

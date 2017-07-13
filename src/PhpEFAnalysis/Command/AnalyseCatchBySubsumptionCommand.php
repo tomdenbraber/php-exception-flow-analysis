@@ -41,8 +41,11 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 		$class_hiearchy = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
 
 		$caught_exception_type_distance_to_caught = [
-			"catch clause type to root" => [],
+			"catch clause type to throwable" => [],
+			"catch clause type to exception" => [],
 			"catch clause to caught type" => [],
+			"caught type to throwable" => [],
+			"caught type to exception" => [],
 		];
 		foreach ($ef as $scope_name => $scope) {
 			$current_scope_count = $this->analyseScope($scope, $class_hiearchy);
@@ -54,16 +57,40 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 					$caught_exception_type_distance_to_caught["catch clause to caught type"][$distance] += $count;
 				}
 			}
-			foreach ($current_scope_count["catch clause type to root"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["catch clause type to root"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["catch clause type to root"][$distance] = $count;
+			foreach ($current_scope_count["catch clause type to throwable"] as $distance => $count) {
+				if (isset($caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance]) === false) {
+					$caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance] = $count;
 				} else {
-					$caught_exception_type_distance_to_caught["catch clause type to root"][$distance] += $count;
+					$caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance] += $count;
+				}
+			}
+			foreach ($current_scope_count["catch clause type to exception"] as $distance => $count) {
+				if (isset($caught_exception_type_distance_to_caught["catch clause type to exception"][$distance]) === false) {
+					$caught_exception_type_distance_to_caught["catch clause type to exception"][$distance] = $count;
+				} else {
+					$caught_exception_type_distance_to_caught["catch clause type to exception"][$distance] += $count;
+				}
+			}
+			foreach ($current_scope_count["caught type to throwable"] as $distance => $count) {
+				if (isset($caught_exception_type_distance_to_caught["caught type to throwable"][$distance]) === false) {
+					$caught_exception_type_distance_to_caught["caught type to throwable"][$distance] = $count;
+				} else {
+					$caught_exception_type_distance_to_caught["caught type to throwable"][$distance] += $count;
+				}
+			}
+			foreach ($current_scope_count["caught type to exception"] as $distance => $count) {
+				if (isset($caught_exception_type_distance_to_caught["caught type to exception"][$distance]) === false) {
+					$caught_exception_type_distance_to_caught["caught type to exception"][$distance] = $count;
+				} else {
+					$caught_exception_type_distance_to_caught["caught type to exception"][$distance] += $count;
 				}
 			}
 		}
 
-		ksort($caught_exception_type_distance_to_caught["catch clause type to root"]);
+		ksort($caught_exception_type_distance_to_caught["catch clause type to throwable"]);
+		ksort($caught_exception_type_distance_to_caught["catch clause type to exception"]);
+		ksort($caught_exception_type_distance_to_caught["caught type to throwable"]);
+		ksort($caught_exception_type_distance_to_caught["caught type to exception"]);
 		ksort($caught_exception_type_distance_to_caught["catch clause to caught type"]);
 
 		if (file_exists($output_path . "/catch-by-subsumption.json") === true) {
@@ -76,8 +103,11 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 
 	private function analyseScope($scope_data, $class_hiearchy) {
 		$catch_clause_distances = [
-			"catch clause type to root" => [],
+			"catch clause type to throwable" => [],
+			"catch clause type to exception" => [],
 			"catch clause to caught type" => [],
+			"caught type to throwable" => [],
+			"caught type to exception" => [],
 		];
 
 		foreach ($scope_data["guarded scopes"] as $guarded_scope_name => $guarded_scope_data) {
@@ -87,20 +117,39 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			foreach ($guarded_scope_data["catch clauses"] as $type => $caught_types) {
 				$catch_clause_type = strtolower($type);
 
-				$distance_to_root = $this->calculateDistanceBetween("throwable", $catch_clause_type, $class_hiearchy);
-				$distance_to_root_str =  "" . $distance_to_root;
-				if (isset($catch_clause_distances["catch clause type to root"][$distance_to_root_str]) === false) {
-					$catch_clause_distances["catch clause type to root"][$distance_to_root_str] = 0;
+				$catch_clause_to_throwable = $this->calculateDistanceBetween("throwable", $catch_clause_type, $class_hiearchy);
+				if (isset($catch_clause_distances["catch clause type to throwable"][$catch_clause_to_throwable]) === false) {
+					$catch_clause_distances["catch clause type to throwable"][$catch_clause_to_throwable] = 0;
 				}
-				$catch_clause_distances["catch clause type to root"][$distance_to_root_str] += 1;
+				$catch_clause_distances["catch clause type to throwable"][$catch_clause_to_throwable] += 1;
+
+
+				$catch_clause_to_exception = $this->calculateDistanceBetween("exception", $catch_clause_type, $class_hiearchy);
+				if (isset($catch_clause_distances["catch clause type to exception"][$catch_clause_to_exception]) === false) {
+					$catch_clause_distances["catch clause type to exception"][$catch_clause_to_exception] = 0;
+				}
+				$catch_clause_distances["catch clause type to exception"][$catch_clause_to_exception] += 1;
 
 				foreach ($caught_types as $caught_type) {
 					$distance_to_catch_type = $this->calculateDistanceBetween($catch_clause_type, $caught_type, $class_hiearchy);
-					$distance_to_catch_type_str =  "" . $distance_to_catch_type;
-					if (isset($catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str]) === false) {
-						$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str] = 0;
+					$distance_to_throwable = $this->calculateDistanceBetween("throwable", $caught_type, $class_hiearchy);
+					$distance_to_exception = $this->calculateDistanceBetween("exception", $caught_type, $class_hiearchy);
+
+					if (isset($catch_clause_distances["catch clause to caught type"][$distance_to_catch_type]) === false) {
+						$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type] = 0;
 					}
-					$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type_str] += 1;
+					$catch_clause_distances["catch clause to caught type"][$distance_to_catch_type] += 1;
+
+					if (isset($catch_clause_distances["caught type to throwable"][$distance_to_throwable]) === false) {
+						$catch_clause_distances["caught type to throwable"][$distance_to_throwable] = 0;
+					}
+					$catch_clause_distances["caught type to throwable"][$distance_to_throwable] += 1;
+
+					if (isset($catch_clause_distances["caught type to exception"][$distance_to_exception]) === false) {
+						$catch_clause_distances["caught type to exception"][$distance_to_exception] = 0;
+					}
+					$catch_clause_distances["caught type to exception"][$distance_to_exception] += 1;
+
 				}
 			}
 
@@ -113,11 +162,36 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 					$catch_clause_distances["catch clause to caught type"][$distance] += $count;
 				}
 			}
-			foreach ($nested_scope_accumulated_counts["catch clause type to root"] as $distance => $count) {
-				if (isset($catch_clause_distances["catch clause type to root"][$distance]) === false) {
-					$catch_clause_distances["catch clause type to root"][$distance] = $count;
+
+			foreach ($nested_scope_accumulated_counts["catch clause type to throwable"] as $distance => $count) {
+				if (isset($catch_clause_distances["catch clause type to throwable"][$distance]) === false) {
+					$catch_clause_distances["catch clause type to throwable"][$distance] = $count;
 				} else {
-					$catch_clause_distances["catch clause type to root"][$distance] += $count;
+					$catch_clause_distances["catch clause type to throwable"][$distance] += $count;
+				}
+			}
+
+			foreach ($nested_scope_accumulated_counts["catch clause type to exception"] as $distance => $count) {
+				if (isset($catch_clause_distances["catch clause type to exception"][$distance]) === false) {
+					$catch_clause_distances["catch clause type to exception"][$distance] = $count;
+				} else {
+					$catch_clause_distances["catch clause type to exception"][$distance] += $count;
+				}
+			}
+
+			foreach ($nested_scope_accumulated_counts["caught type to throwable"] as $distance => $count) {
+				if (isset($catch_clause_distances["caught type to throwable"][$distance]) === false) {
+					$catch_clause_distances["caught type to throwable"][$distance] = $count;
+				} else {
+					$catch_clause_distances["caught type to throwable"][$distance] += $count;
+				}
+			}
+
+			foreach ($nested_scope_accumulated_counts["caught type to exception"] as $distance => $count) {
+				if (isset($catch_clause_distances["caught type to exception"][$distance]) === false) {
+					$catch_clause_distances["caught type to exception"][$distance] = $count;
+				} else {
+					$catch_clause_distances["caught type to exception"][$distance] += $count;
 				}
 			}
 		}

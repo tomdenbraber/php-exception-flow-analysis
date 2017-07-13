@@ -269,7 +269,7 @@ class AnalyseEncountersContractCommand extends Command {
 					"methods" => $methods_probably_correct_count,
 					"exceptions" => $exceptions_probably_correct_count,
 					"unique complying functions" => $unique_probably_complying_methods_count,
-					"total compliances" => $complying_methods_count,
+					"total compliances" => $probably_complying_methods_count,
 				],
 				"annotated and not encountered" => [
 					"methods" => $redundant_annotated_method_count,

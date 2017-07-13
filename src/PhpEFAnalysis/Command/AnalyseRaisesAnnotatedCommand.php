@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -26,6 +27,10 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 				'A file containing a partial order of methods'
 			)
 			->addArgument(
+				"classHierarchyFile",
+				InputArgument::REQUIRED,
+				"Path to a class hierarchy file")
+			->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -35,6 +40,7 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 	public function execute(InputInterface $input, OutputInterface $output) {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
+		$class_hierarchy_file = $input->getArgument('classHierarchyFile');
 		$method_order_file = $input->getArgument('methodOrderFile');
 		$output_path = $input->getArgument("outputPath");
 
@@ -47,10 +53,16 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		if (!is_file($method_order_file) || pathinfo($method_order_file, PATHINFO_EXTENSION) !== "json") {
 			die($method_order_file . " is not a valid method order file");
 		}
+		if (!is_file($class_hierarchy_file) || pathinfo($class_hierarchy_file, PATHINFO_EXTENSION) !== "json") {
+			die($class_hierarchy_file . " is not a valid method order file");
+		}
 
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
 		$annotations = json_decode(file_get_contents($annotations_file), $assoc = true);
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
+		$class_hierarchy = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
+
+		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
 
 		unset($ef["{main}"]);
 
@@ -72,12 +84,20 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 
 			$misses[$scope_name] = [];
 			$correct[$scope_name] = [];
+			$probably[$scope_name] = [];
+
 			foreach ($counting_raises as $counting_raise) {
-				if (isset($annotations[$scope_name][$counting_raise]) === false && isset($annotations[$scope_name]['\\' . $counting_raise]) === false) {
-					//not documented, so add to misses
-					$misses[$scope_name][] = $counting_raise;
-				} else {
-					$correct[$scope_name][] = $counting_raise;
+				$comparison = $comparator->isAnnotated($scope_name, $counting_raise, $annotations[$scope_name]);
+				switch ($comparison) {
+					case ThrowsAnnotationComparator::NO:
+						$misses[$scope_name][] = $counting_raise;
+						break;
+					case ThrowsAnnotationComparator::YES:
+						$correct[$scope_name][] = $counting_raise;
+						break;
+					case ThrowsAnnotationComparator::PROBABLY:
+						$probably[$scope_name][] = $counting_raise;
+						break;
 				}
 			}
 		}
@@ -93,6 +113,9 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 				"raised and annotated" => array_filter($correct, function($item) {
 					return empty($item) === false;
 				}),
+				"raised and probably annotated" => array_filter($probably, function($item) {
+					return empty($item) === false;
+				})
 			], JSON_PRETTY_PRINT));
 		}
 
@@ -107,10 +130,15 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 			foreach ($correct as $fn => $exceptions) {
 				$count_correct += count($exceptions);
 			}
+			$count_probably = 0;
+			foreach ($probably as $fn => $exceptions) {
+				$count_probably += count($exceptions);
+			}
 
 			file_put_contents($output_path . "/raises-annotated-numbers.json", json_encode([
 				"correctly annotated" => $count_correct,
 				"not annotated" => $count_missed,
+				"probably annotated" => $count_probably,
 			], JSON_PRETTY_PRINT));
 		}
 

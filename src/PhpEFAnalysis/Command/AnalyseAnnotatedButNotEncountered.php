@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,6 +26,10 @@ class AnalyseAnnotatedButNotEncountered extends Command {
 				'A file containing a partial order of methods'
 			)
 			->addArgument(
+				"classHierarchyFile",
+				InputArgument::REQUIRED,
+				"Path to a class hierarchy file")
+			->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -35,6 +40,7 @@ class AnalyseAnnotatedButNotEncountered extends Command {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
 		$method_order_file = $input->getArgument('methodOrderFile');
+		$class_hierarchy_file = $input->getArgument("classHierarchyFile");
 		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
@@ -46,15 +52,21 @@ class AnalyseAnnotatedButNotEncountered extends Command {
 		if (!is_file($method_order_file) || pathinfo($method_order_file, PATHINFO_EXTENSION) !== "json") {
 			die($method_order_file . " is not a valid method order file");
 		}
+		if (!is_file($class_hierarchy_file) || pathinfo($class_hierarchy_file, PATHINFO_EXTENSION) !== "json") {
+			die($class_hierarchy_file . " is not a valid method order file");
+		}
 
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
+		$class_hierarchy = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
 
 		unset($ef["{main}"]);
 
 		$annotations = json_decode(file_get_contents($annotations_file), $assoc = true);
 
 		$annotated_and_not_encountered = [];
+
+		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
 
 		foreach ($ef as $scope_name => $scope_data) {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
@@ -81,9 +93,8 @@ class AnalyseAnnotatedButNotEncountered extends Command {
 
 			$annotated_and_not_encountered[$scope_name] = [];
 			foreach ($annotations[$scope_name] as $annotated_exc => $_) {
-				if (in_array($annotated_exc, $encountered, true) === false &&
-					in_array(substr($annotated_exc, 1), $encountered, true) === false) //without prefixed \
-				{
+				$comparison = $comparator->isEncountered($scope_name, $encountered, $annotated_exc);
+				if ($comparison === ThrowsAnnotationComparator::NO) {
 					$annotated_and_not_encountered[$scope_name][] = $annotated_exc;
 				}
 			}

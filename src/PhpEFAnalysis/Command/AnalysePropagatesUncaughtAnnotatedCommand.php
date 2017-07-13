@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -25,6 +26,10 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 				'A file containing a partial order of methods'
 			)
 			->addArgument(
+				"classHierarchyFile",
+				InputArgument::REQUIRED,
+				"Path to a class hierarchy file")
+			->addArgument(
 				'outputPath',
 				InputArgument::REQUIRED,
 				'The path to which the analysis results have to be written'
@@ -35,6 +40,7 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 		$exception_flow_file = $input->getArgument('exceptionFlowFile');
 		$annotations_file = $input->getArgument('annotationsFile');
 		$method_order_file = $input->getArgument('methodOrderFile');
+		$class_hierarchy_file = $input->getArgument("classHierarchyFile");
 		$output_path = $input->getArgument('outputPath');
 
 		if (!is_file($exception_flow_file) || pathinfo($exception_flow_file, PATHINFO_EXTENSION) !== "json") {
@@ -46,9 +52,14 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 		if (!is_file($method_order_file) || pathinfo($method_order_file, PATHINFO_EXTENSION) !== "json") {
 			die($method_order_file . " is not a valid method order file");
 		}
+		if (!is_file($class_hierarchy_file) || pathinfo($class_hierarchy_file, PATHINFO_EXTENSION) !== "json") {
+			die($class_hierarchy_file . " is not a valid method order file");
+		}
+
 
 		$method_order = json_decode(file_get_contents($method_order_file), $assoc = true);
 		$ef = json_decode(file_get_contents($exception_flow_file), $assoc = true);
+		$class_hierarchy = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);;
 
 		unset($ef["{main}"]);
 
@@ -56,6 +67,9 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 
 		$encountered_and_not_annotated = [];
 		$encountered_and_annotated = [];
+		$encountered_and_probably_annotated[] = [];
+
+		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
 
 		foreach ($ef as $scope_name => $scope_data) {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
@@ -82,12 +96,20 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 
 			$encountered_and_not_annotated[$scope_name] = [];
 			$encountered_and_annotated[$scope_name] = [];
-			foreach ($propagated_or_uncaught as $encounter) {
-				if (isset($annotations[$scope_name][$encounter]) === false && isset($annotations[$scope_name]['\\' . $encounter]) === false) {
-					//not documented, so add to encountered_and_not_annotated
-					$encountered_and_not_annotated[$scope_name][] = $encounter;
-				} else {
-					$encountered_and_annotated[$scope_name][] = $encounter;
+			$encountered_and_probably_annotated[$scope_name] = [];
+
+			foreach ($propagated_or_uncaught as $exception) {
+				$comparison = $comparator->isAnnotated($scope_name, $exception, $annotations[$scope_name]);
+				switch ($comparison) {
+					case ThrowsAnnotationComparator::NO:
+						$encountered_and_not_annotated[$scope_name][] = $exception;
+						break;
+					case ThrowsAnnotationComparator::YES:
+						$encountered_and_annotated[$scope_name][] = $exception;
+						break;
+					case ThrowsAnnotationComparator::PROBABLY:
+						$encountered_and_probably_annotated[$scope_name][] = $exception;
+						break;
 				}
 			}
 		}
@@ -100,6 +122,10 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 		foreach ($encountered_and_annotated as $fn => $exceptions) {
 			$count_encountered_and_annotated += count($exceptions);
 		}
+		$count_encountered_and_probably_annotated = 0;
+		foreach ($encountered_and_probably_annotated as $fn => $exceptions) {
+			$count_encountered_and_probably_annotated += count($exceptions);
+		}
 		if (file_exists($output_path . "/propagated-or-uncaught-annotated-specific.json") === true) {
 			die($output_path . "/propagated-or-uncaught-annotated-specific.json already exists");
 		} else {
@@ -108,6 +134,9 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 					return empty($item) === false;
 				}),
 				"encountered and annotated" => array_filter($encountered_and_annotated, function($item) {
+					return empty($item) === false;
+				}),
+				"encountered and probably annotated" => array_filter($encountered_and_probably_annotated, function($item) {
 					return empty($item) === false;
 				}),
 			], JSON_PRETTY_PRINT));
@@ -120,6 +149,7 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 			file_put_contents($output_path . "/propagated-or-uncaught-annotated-numbers.json", json_encode([
 				"correctly annotated" => $count_encountered_and_annotated,
 				"not annotated" => $count_encountered_and_not_annotated,
+				"probably annotated" => $count_encountered_and_probably_annotated,
 			], JSON_PRETTY_PRINT));
 		}
 

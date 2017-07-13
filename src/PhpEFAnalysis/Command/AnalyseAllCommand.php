@@ -93,6 +93,7 @@ class AnalyseAllCommand extends Command {
 			"exceptionFlowFile" => $input->getArgument("exceptionFlowFile"),
 			"annotationsFile" => $input->getArgument("annotationsFile"),
 			"methodOrderFile" => $input->getArgument("methodOrderFile"),
+			"classHierarchyFile" => $input->getArgument("classHierarchyFile"),
 			"outputPath" => $input->getArgument("outputPath"),
 		]);
 

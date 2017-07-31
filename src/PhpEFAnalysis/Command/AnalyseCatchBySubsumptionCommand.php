@@ -46,45 +46,13 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			"catch clause to caught type" => [],
 			"caught type to throwable" => [],
 			"caught type to exception" => [],
+			"caught type occurring in catch to clause distance" => [],
+			"caught type occurring in dist to exception" => [],
 		];
 		foreach ($ef as $scope_name => $scope) {
 			$current_scope_count = $this->analyseScope($scope, $class_hiearchy);
 
-			foreach ($current_scope_count["catch clause to caught type"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["catch clause to caught type"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["catch clause to caught type"][$distance] = $count;
-				} else {
-					$caught_exception_type_distance_to_caught["catch clause to caught type"][$distance] += $count;
-				}
-			}
-			foreach ($current_scope_count["catch clause type to throwable"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance] = $count;
-				} else {
-					$caught_exception_type_distance_to_caught["catch clause type to throwable"][$distance] += $count;
-				}
-			}
-			foreach ($current_scope_count["catch clause type to exception"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["catch clause type to exception"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["catch clause type to exception"][$distance] = $count;
-				} else {
-					$caught_exception_type_distance_to_caught["catch clause type to exception"][$distance] += $count;
-				}
-			}
-			foreach ($current_scope_count["caught type to throwable"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["caught type to throwable"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["caught type to throwable"][$distance] = $count;
-				} else {
-					$caught_exception_type_distance_to_caught["caught type to throwable"][$distance] += $count;
-				}
-			}
-			foreach ($current_scope_count["caught type to exception"] as $distance => $count) {
-				if (isset($caught_exception_type_distance_to_caught["caught type to exception"][$distance]) === false) {
-					$caught_exception_type_distance_to_caught["caught type to exception"][$distance] = $count;
-				} else {
-					$caught_exception_type_distance_to_caught["caught type to exception"][$distance] += $count;
-				}
-			}
+			$caught_exception_type_distance_to_caught = self::mergeArrays($caught_exception_type_distance_to_caught, $current_scope_count);
 		}
 
 		ksort($caught_exception_type_distance_to_caught["catch clause type to throwable"]);
@@ -92,6 +60,8 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 		ksort($caught_exception_type_distance_to_caught["caught type to throwable"]);
 		ksort($caught_exception_type_distance_to_caught["caught type to exception"]);
 		ksort($caught_exception_type_distance_to_caught["catch clause to caught type"]);
+		ksort($caught_exception_type_distance_to_caught["caught type occurring in catch to clause distance"]);
+		ksort($caught_exception_type_distance_to_caught["caught type occurring in dist to exception"]);
 
 		if (file_exists($output_path . "/catch-by-subsumption.json") === true) {
 			die($output_path . "/catch-by-subsumption.json already exists");
@@ -108,6 +78,8 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 			"catch clause to caught type" => [],
 			"caught type to throwable" => [],
 			"caught type to exception" => [],
+			"caught type occurring in catch to clause distance" => [],
+			"caught type occurring in dist to exception" => [],
 		];
 
 		foreach ($scope_data["guarded scopes"] as $guarded_scope_name => $guarded_scope_data) {
@@ -150,50 +122,27 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 					}
 					$catch_clause_distances["caught type to exception"][$distance_to_exception] += 1;
 
+					if (isset($catch_clause_distances["caught type occurring in catch to clause distance"][$distance_to_catch_type]) === false) {
+						$catch_clause_distances["caught type occurring in catch to clause distance"][$distance_to_catch_type] = [];
+					}
+					if (isset($catch_clause_distances["caught type occurring in catch to clause distance"][$distance_to_catch_type][$caught_type]) === false) {
+						$catch_clause_distances["caught type occurring in catch to clause distance"][$distance_to_catch_type][$caught_type] = 0;
+					}
+					$catch_clause_distances["caught type occurring in catch to clause distance"][$distance_to_catch_type][$caught_type] += 1;
+
+
+					if (isset($catch_clause_distances["caught type occurring in dist to exception"][$distance_to_exception]) === false) {
+						$catch_clause_distances["caught type occurring in dist to exception"][$distance_to_exception] = [];
+					}
+					if (isset($catch_clause_distances["caught type occurring in dist to exception"][$distance_to_exception][$caught_type]) === false) {
+						$catch_clause_distances["caught type occurring in dist to exception"][$distance_to_exception][$caught_type] = 0;
+					}
+					$catch_clause_distances["caught type occurring in dist to exception"][$distance_to_exception][$caught_type] += 1;
 				}
 			}
 
 			$nested_scope_accumulated_counts = $this->analyseScope($guarded_scope_data["inclosed"][$inclosed_scope_name], $class_hiearchy);
-
-			foreach ($nested_scope_accumulated_counts["catch clause to caught type"] as $distance => $count) {
-				if (isset($catch_clause_distances["catch clause to caught type"][$distance]) === false) {
-					$catch_clause_distances["catch clause to caught type"][$distance] = $count;
-				} else {
-					$catch_clause_distances["catch clause to caught type"][$distance] += $count;
-				}
-			}
-
-			foreach ($nested_scope_accumulated_counts["catch clause type to throwable"] as $distance => $count) {
-				if (isset($catch_clause_distances["catch clause type to throwable"][$distance]) === false) {
-					$catch_clause_distances["catch clause type to throwable"][$distance] = $count;
-				} else {
-					$catch_clause_distances["catch clause type to throwable"][$distance] += $count;
-				}
-			}
-
-			foreach ($nested_scope_accumulated_counts["catch clause type to exception"] as $distance => $count) {
-				if (isset($catch_clause_distances["catch clause type to exception"][$distance]) === false) {
-					$catch_clause_distances["catch clause type to exception"][$distance] = $count;
-				} else {
-					$catch_clause_distances["catch clause type to exception"][$distance] += $count;
-				}
-			}
-
-			foreach ($nested_scope_accumulated_counts["caught type to throwable"] as $distance => $count) {
-				if (isset($catch_clause_distances["caught type to throwable"][$distance]) === false) {
-					$catch_clause_distances["caught type to throwable"][$distance] = $count;
-				} else {
-					$catch_clause_distances["caught type to throwable"][$distance] += $count;
-				}
-			}
-
-			foreach ($nested_scope_accumulated_counts["caught type to exception"] as $distance => $count) {
-				if (isset($catch_clause_distances["caught type to exception"][$distance]) === false) {
-					$catch_clause_distances["caught type to exception"][$distance] = $count;
-				} else {
-					$catch_clause_distances["caught type to exception"][$distance] += $count;
-				}
-			}
+			$catch_clause_distances = self::mergeArrays($catch_clause_distances, $nested_scope_accumulated_counts);
 		}
 
 		return $catch_clause_distances;
@@ -201,5 +150,27 @@ class AnalyseCatchBySubsumptionCommand extends Command {
 
 	private function calculateDistanceBetween($class_1, $class_2, $class_hierarchy) {
 		return count(array_intersect($class_hierarchy["class resolved by"][$class_1], $class_hierarchy["class resolves"][$class_2])) - 1;
+	}
+
+	/**
+	 * Merges array_2 into array_1
+	 * @param array $array_1
+	 * @param array $array_2
+	 */
+	private static function mergeArrays(array $array_1, array $array_2) {
+		foreach ($array_2 as $key => $value) {
+			if (isset($array_1[$key]) === false) {
+				$array_1[$key] = $value;
+			} else {
+				if (is_array($value) === true && is_array($array_1[$key]) === true) {
+					$array_1[$key] = self::mergeArrays($array_1[$key], $value);
+				} else if (is_int($value) === true && is_int($array_1[$key]) === true) {
+					$array_1[$key] += $value;
+				} else {
+					throw new \LogicException("unmergeable arrays!");
+				}
+			}
+		}
+		return $array_1;
 	}
 }

@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ClassResolver;
 use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -61,10 +62,15 @@ class AnalyseEncountersContractCommand extends Command {
 		$encountered_and_annotated = [];
 		$encountered_and_probably_annotated = [];
 		$annotated_and_not_encountered = []; //counts all exceptions that are annotated on an abstract method, but never encountered.
+		$encountered_but_not_annotated_logic = [];
+		$encountered_and_annotated_logic = [];
+		$encountered_and_probably_annotated_logic = [];
+		$annotated_and_not_encountered_logic = []; //counts all exceptions that are annotated on an abstract method, but never encountered.
 
 		$encounters_per_scope = [];
 
 		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
+		$resolver = new ClassResolver($class_hierarchy);
 
 		foreach ($ef as $scope_name => $scope_data) {
 			$method_order_scope_name = strtolower($scope_name);
@@ -104,9 +110,13 @@ class AnalyseEncountersContractCommand extends Command {
 					$encountered_but_not_annotated[$ancestor] = [];
 					$encountered_and_annotated[$ancestor] = [];
 					$encountered_and_probably_annotated[$ancestor] = [];
+					$encountered_but_not_annotated_logic[$ancestor] = [];
+					$encountered_and_annotated_logic[$ancestor] = [];
+					$encountered_and_probably_annotated_logic[$ancestor] = [];
 				}
 
 				foreach ($encounters as $encounter) {
+					$resolves_to_logic = $resolver->resolvesTo($encounter, "logicexception");
 					$comparison = $comparator->isAnnotated($ancestor, $encounter, $annotations[$ancestor]);
 					switch ($comparison) {
 						case ThrowsAnnotationComparator::NO:
@@ -114,18 +124,37 @@ class AnalyseEncountersContractCommand extends Command {
 								$encountered_but_not_annotated[$ancestor][$encounter] = [];
 							}
 							$encountered_but_not_annotated[$ancestor][$encounter][] = $scope_name;
+
+							if ($resolves_to_logic === true) {
+								if (isset($encountered_but_not_annotated_logic[$ancestor][$encounter]) === false) {
+									$encountered_but_not_annotated_logic[$ancestor][$encounter] = [];
+								}
+								$encountered_but_not_annotated_logic[$ancestor][$encounter][] = $scope_name;
+							}
 							break;
 						case ThrowsAnnotationComparator::YES:
 							if (isset($encountered_and_annotated[$ancestor][$encounter]) === false) {
 								$encountered_and_annotated[$ancestor][$encounter] = [];
 							}
 							$encountered_and_annotated[$ancestor][$encounter][] = $scope_name;
+							 if ($resolves_to_logic === true) {
+								 if (isset($encountered_and_annotated_logic[$ancestor][$encounter]) === false) {
+									 $encountered_and_annotated_logic[$ancestor][$encounter] = [];
+								 }
+								 $encountered_and_annotated_logic[$ancestor][$encounter][] = $scope_name;
+							 }
 							break;
 						case ThrowsAnnotationComparator::PROBABLY:
 							if (isset($encountered_and_probably_annotated[$ancestor][$encounter]) === false) {
 								$encountered_and_probably_annotated[$ancestor][$encounter] = [];
 							}
 							$encountered_and_probably_annotated[$ancestor][$encounter][] = $scope_name;
+							if ($resolves_to_logic === true) {
+								if (isset($encountered_and_probably_annotated_logic[$ancestor][$encounter]) === false) {
+									$encountered_and_probably_annotated_logic[$ancestor][$encounter] = [];
+								}
+								$encountered_and_probably_annotated_logic[$ancestor][$encounter][] = $scope_name;
+							}
 							break;
 					}
 
@@ -171,6 +200,15 @@ class AnalyseEncountersContractCommand extends Command {
 				"encountered and probably annotated" => array_filter($encountered_and_probably_annotated, function($item) {
 					return empty($item) === false;
 				}),
+				"encountered but not annotated (resolves to logic)" => array_filter($encountered_but_not_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"encountered and annotated (resolves to logic)" => array_filter($encountered_and_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"encountered and probably annotated (resolves to logic)" => array_filter($encountered_and_probably_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
 				"annotated and not encountered" => array_filter($annotated_and_not_encountered, function($item) {
 					return empty($item) === false;
 				}),
@@ -185,6 +223,7 @@ class AnalyseEncountersContractCommand extends Command {
 			$exceptions_miss_count = 0;
 			$violating_methods_count = 0;
 			$unique_violating_methods_count = 0;
+
 			$methods_correct_count = 0;
 			$exceptions_correct_count = 0;
 			$complying_methods_count = 0;
@@ -195,6 +234,21 @@ class AnalyseEncountersContractCommand extends Command {
 			$probably_complying_methods_count = 0;
 			$unique_probably_complying_methods_count = 0;
 
+
+			$methods_miss_count_logic = 0;
+			$exceptions_miss_count_logic = 0;
+			$violating_methods_count_logic = 0;
+			$unique_violating_methods_count_logic = 0;
+
+			$methods_correct_count_logic = 0;
+			$exceptions_correct_count_logic = 0;
+			$complying_methods_count_logic = 0;
+			$unique_complying_methods_count_logic = 0;
+
+			$methods_probably_correct_count_logic = 0;
+			$exceptions_probably_correct_count_logic = 0;
+			$probably_complying_methods_count_logic = 0;
+			$unique_probably_complying_methods_count_logic = 0;
 
 			$redundant_annotated_method_count = 0;
 			$redundant_annotation_count = 0;
@@ -243,6 +297,50 @@ class AnalyseEncountersContractCommand extends Command {
 				}
 				$unique_probably_complying_methods_count += count(array_unique($probably_complying_merged));
 			}
+
+			foreach ($encountered_but_not_annotated_logic as $function => $missed_for_fn) {
+				if (empty($missed_for_fn) === true) {
+					continue;
+				}
+
+				$methods_miss_count_logic += 1;
+				$exceptions_miss_count_logic += count(array_keys($missed_for_fn));
+				$violating_merged = [];
+				foreach ($missed_for_fn as $exception => $violating_fns) {
+					$violating_methods_count_logic += count($violating_fns);
+					$violating_merged = array_merge($violating_merged, $violating_fns);
+				}
+				$unique_violating_methods_count_logic += count(array_unique($violating_merged));
+			}
+			foreach ($encountered_and_annotated_logic as $function => $correct_for_fn) {
+				if (empty($correct_for_fn) === true) {
+					continue;
+				}
+
+				$methods_correct_count_logic += 1;
+				$exceptions_correct_count_logic += count(array_keys($correct_for_fn));
+				$complying_merged = [];
+				foreach ($correct_for_fn as $exception => $complying_fns) {
+					$complying_methods_count_logic += count($complying_fns);
+					$complying_merged = array_merge($complying_merged, $complying_fns);
+				}
+				$unique_complying_methods_count_logic += count(array_unique($complying_merged));
+			}
+			foreach ($encountered_and_probably_annotated_logic as $function => $probably_correct_for_fn) {
+				if (empty($probably_correct_for_fn) === true) {
+					continue;
+				}
+
+				$methods_probably_correct_count_logic += 1;
+				$exceptions_probably_correct_count_logic += count(array_keys($probably_correct_for_fn));
+				$probably_complying_merged = [];
+				foreach ($probably_correct_for_fn as $exception => $complying_fns) {
+					$probably_complying_methods_count_logic += count($complying_fns);
+					$probably_complying_merged = array_merge($probably_complying_merged, $complying_fns);
+				}
+				$unique_probably_complying_methods_count_logic += count(array_unique($probably_complying_merged));
+			}
+
 			foreach ($annotated_and_not_encountered as $method => $annotations) {
 				if (empty($annotations) === true) {
 					continue;
@@ -271,6 +369,25 @@ class AnalyseEncountersContractCommand extends Command {
 					"unique complying functions" => $unique_probably_complying_methods_count,
 					"total compliances" => $probably_complying_methods_count,
 				],
+				"encountered but not annotated (resolves to logic)" => [
+					"methods" => $methods_miss_count_logic,
+					"exceptions" => $exceptions_miss_count_logic,
+					"unique violating functions" => $unique_violating_methods_count_logic,
+					"total violations" => $violating_methods_count_logic,
+				],
+				"encountered and annotated (resolves to logic)" => [
+					"methods" => $methods_correct_count_logic,
+					"exceptions" => $exceptions_correct_count_logic,
+					"unique complying functions" => $unique_complying_methods_count_logic,
+					"total compliances" => $complying_methods_count_logic,
+				],
+				"encountered and probably annotated (resolves to logic)" => [
+					"methods" => $methods_probably_correct_count_logic,
+					"exceptions" => $exceptions_probably_correct_count_logic,
+					"unique complying functions" => $unique_probably_complying_methods_count_logic,
+					"total compliances" => $probably_complying_methods_count_logic,
+				],
+
 				"annotated and not encountered" => [
 					"methods" => $redundant_annotated_method_count,
 					"annotations" => $redundant_annotation_count,

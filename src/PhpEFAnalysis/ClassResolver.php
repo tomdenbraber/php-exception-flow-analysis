@@ -1,7 +1,7 @@
 <?php
 namespace PhpEFAnalysis;
 
-class ExceptionResolver {
+class ClassResolver {
 	private $class_hierarchy;
 	public function __construct($class_hierarchy) {
 		$this->class_hierarchy = $class_hierarchy;

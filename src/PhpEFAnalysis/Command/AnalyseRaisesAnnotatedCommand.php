@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ClassResolver;
 use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -63,11 +64,16 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 		$class_hierarchy = json_decode(file_get_contents($class_hierarchy_file), $assoc = true);
 
 		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
+		$resolver = new ClassResolver($class_hierarchy);
 
 		unset($ef["{main}"]);
 
 		$misses = [];
 		$correct = [];
+		$probably = [];
+		$misses_logic = [];
+		$correct_logic = [];
+		$probably_logic = [];
 
 		foreach ($ef as $scope_name => $scope_data) {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
@@ -83,20 +89,34 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 			}
 
 			$misses[$scope_name] = [];
+			$misses_logic[$scope_name] = [];
 			$correct[$scope_name] = [];
+			$correct_logic[$scope_name] = [];
 			$probably[$scope_name] = [];
+			$probably_logic[$scope_name] = [];
 
 			foreach ($counting_raises as $counting_raise) {
+				$resolves_to_logic = $resolver->resolvesTo($counting_raise, "logicexception");
+
 				$comparison = $comparator->isAnnotated($scope_name, $counting_raise, $annotations[$scope_name]);
 				switch ($comparison) {
 					case ThrowsAnnotationComparator::NO:
 						$misses[$scope_name][] = $counting_raise;
+						if ($resolves_to_logic === true) {
+							$misses_logic[$scope_name][] = $counting_raise;
+						}
 						break;
 					case ThrowsAnnotationComparator::YES:
 						$correct[$scope_name][] = $counting_raise;
+						if ($resolves_to_logic === true) {
+							$correct_logic[$scope_name][] = $counting_raise;
+						}
 						break;
 					case ThrowsAnnotationComparator::PROBABLY:
 						$probably[$scope_name][] = $counting_raise;
+						if ($resolves_to_logic === true) {
+							$probably_logic[$scope_name][] = $counting_raise;
+						}
 						break;
 				}
 			}
@@ -114,6 +134,15 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 					return empty($item) === false;
 				}),
 				"raised and probably annotated" => array_filter($probably, function($item) {
+					return empty($item) === false;
+				}),
+				"raised and not annotated (resolves to logic)" => array_filter($misses_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"raised and annotated (resolves to logic)" => array_filter($correct_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"raised and probably annotated (resolves to logic)" => array_filter($probably_logic, function($item) {
 					return empty($item) === false;
 				})
 			], JSON_PRETTY_PRINT));
@@ -134,11 +163,27 @@ class AnalyseRaisesAnnotatedCommand extends Command {
 			foreach ($probably as $fn => $exceptions) {
 				$count_probably += count($exceptions);
 			}
+			$count_missed_logic = 0;
+			foreach ($misses_logic as $fn => $exceptions) {
+				$count_missed_logic += count($exceptions);
+			}
+			$count_correct_logic = 0;
+			foreach ($correct_logic as $fn => $exceptions) {
+				$count_correct_logic += count($exceptions);
+			}
+			$count_probably_logic = 0;
+			foreach ($probably_logic as $fn => $exceptions) {
+				$count_probably_logic += count($exceptions);
+			}
+
 
 			file_put_contents($output_path . "/raises-annotated-numbers.json", json_encode([
 				"correctly annotated" => $count_correct,
 				"not annotated" => $count_missed,
 				"probably annotated" => $count_probably,
+				"correctly annotated (resolves to logic)" => $count_correct_logic, //this is an inclusive number, i.e. all resolves to logic annotations are also included in the default annotated set
+				"not annotated (resolves to logic)" => $count_missed_logic,
+				"probably annotated (resolves to logic)" => $count_probably_logic,
 			], JSON_PRETTY_PRINT));
 		}
 

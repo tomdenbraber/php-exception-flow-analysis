@@ -59,12 +59,12 @@ class AnalyseAllCommand extends Command {
 			$catch_paths_dump = $this->prepareFile($input->getArgument("pathToCatchClauses"), $prefix);
 		}
 
-		$prelim_input = new ArrayInput([
+		/*$prelim_input = new ArrayInput([
 			"AstSystem" => $input->getArgument("AstSystem"),
 			"annotationsFile" => $input->getArgument("annotationsFile"),
 			"outputPath" => $input->getArgument("outputPath"),
 			"onlyAnalyseWithPrefix" => $input->getArgument("onlyAnalyseWithPrefix"),
-		]);
+		]);*/
 
 		$annotations_and_method_order_input = new ArrayInput([
 			"annotationsFile" => $input->getArgument("annotationsFile"),
@@ -105,7 +105,7 @@ class AnalyseAllCommand extends Command {
 		$buffered_output = new BufferedOutput();
 		$created_paths = [];
 
-		$preliminary_cmd = $app->find("analysis:preliminary");
+		//$preliminary_cmd = $app->find("analysis:preliminary");
 		$annotations_diff_cmd = $app->find("analysis:annotations-difference-abstract-implementation");
 
 		$no_encounters_cmd = $app->find("analysis:encounters-per-method");
@@ -119,8 +119,8 @@ class AnalyseAllCommand extends Command {
 		$annotated_not_encountered_cmd = $app->find("analysis:annotated-not-encountered");
 		$encounters_contract_cmd = $app->find("analysis:encounters-contract");
 
-		$preliminary_cmd->run($prelim_input, $buffered_output);
-		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
+		//$preliminary_cmd->run($prelim_input, $buffered_output);
+		//$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 		$annotations_diff_cmd->run($annotations_and_method_order_input, $buffered_output);
 		$created_paths = array_merge(json_decode($buffered_output->fetch(), $assoc = true), $created_paths);
 

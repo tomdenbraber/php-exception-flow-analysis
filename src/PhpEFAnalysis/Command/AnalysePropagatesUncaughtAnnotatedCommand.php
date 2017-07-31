@@ -1,6 +1,7 @@
 <?php
 namespace PhpEFAnalysis\Command;
 
+use PhpEFAnalysis\ClassResolver;
 use PhpEFAnalysis\ThrowsAnnotationComparator;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -67,9 +68,15 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 
 		$encountered_and_not_annotated = [];
 		$encountered_and_annotated = [];
-		$encountered_and_probably_annotated[] = [];
+		$encountered_and_probably_annotated = [];
+		$encountered_and_not_annotated_logic = [];
+		$encountered_and_annotated_logic = [];
+		$encountered_and_probably_annotated_logic = [];
+
+
 
 		$comparator = new ThrowsAnnotationComparator($class_hierarchy);
+		$resolver = new ClassResolver($class_hierarchy);
 
 		foreach ($ef as $scope_name => $scope_data) {
 			if (isset($method_order[$scope_name]) === true && $method_order[$scope_name]["abstract"] === true) {
@@ -97,18 +104,32 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 			$encountered_and_not_annotated[$scope_name] = [];
 			$encountered_and_annotated[$scope_name] = [];
 			$encountered_and_probably_annotated[$scope_name] = [];
+			$encountered_and_not_annotated_logic[$scope_name] = [];
+			$encountered_and_annotated_logic[$scope_name] = [];
+			$encountered_and_probably_annotated_logic[$scope_name] = [];
 
 			foreach ($propagated_or_uncaught as $exception) {
 				$comparison = $comparator->isAnnotated($scope_name, $exception, $annotations[$scope_name]);
+				$resolves_to_logicexception = $resolver->resolvesTo($exception, "logicexception");
+
 				switch ($comparison) {
 					case ThrowsAnnotationComparator::NO:
 						$encountered_and_not_annotated[$scope_name][] = $exception;
+						if ($resolves_to_logicexception) {
+							$encountered_and_not_annotated_logic[$scope_name][] = $exception;
+						}
 						break;
 					case ThrowsAnnotationComparator::YES:
 						$encountered_and_annotated[$scope_name][] = $exception;
+						if ($resolves_to_logicexception) {
+							$encountered_and_annotated_logic[$scope_name][] = $exception;
+						}
 						break;
 					case ThrowsAnnotationComparator::PROBABLY:
 						$encountered_and_probably_annotated[$scope_name][] = $exception;
+						if ($resolves_to_logicexception) {
+							$encountered_and_probably_annotated_logic[$scope_name][] = $exception;
+						}
 						break;
 				}
 			}
@@ -126,6 +147,20 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 		foreach ($encountered_and_probably_annotated as $fn => $exceptions) {
 			$count_encountered_and_probably_annotated += count($exceptions);
 		}
+
+		$count_encountered_and_not_annotated_logic = 0;
+		foreach ($encountered_and_not_annotated_logic as $fn => $exceptions) {
+			$count_encountered_and_not_annotated_logic += count($exceptions);
+		}
+		$count_encountered_and_annotated_logic = 0;
+		foreach ($encountered_and_annotated_logic as $fn => $exceptions) {
+			$count_encountered_and_annotated_logic += count($exceptions);
+		}
+		$count_encountered_and_probably_annotated_logic = 0;
+		foreach ($encountered_and_probably_annotated_logic as $fn => $exceptions) {
+			$count_encountered_and_probably_annotated_logic += count($exceptions);
+		}
+
 		if (file_exists($output_path . "/propagated-or-uncaught-annotated-specific.json") === true) {
 			die($output_path . "/propagated-or-uncaught-annotated-specific.json already exists");
 		} else {
@@ -139,6 +174,15 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 				"encountered and probably annotated" => array_filter($encountered_and_probably_annotated, function($item) {
 					return empty($item) === false;
 				}),
+				"encountered and not annotated (resolves to logic)" => array_filter($encountered_and_not_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"encountered and annotated (resolves to logic)" => array_filter($encountered_and_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
+				"encountered and probably annotated (resolves to logic)" => array_filter($encountered_and_probably_annotated_logic, function($item) {
+					return empty($item) === false;
+				}),
 			], JSON_PRETTY_PRINT));
 		}
 
@@ -150,6 +194,9 @@ class AnalysePropagatesUncaughtAnnotatedCommand extends Command {
 				"correctly annotated" => $count_encountered_and_annotated,
 				"not annotated" => $count_encountered_and_not_annotated,
 				"probably annotated" => $count_encountered_and_probably_annotated,
+				"correctly annotated (resolves to logic)" => $count_encountered_and_annotated_logic,
+				"not annotated (resolves to logic)" => $count_encountered_and_not_annotated_logic,
+				"probably annotated (resolves to logic)" => $count_encountered_and_probably_annotated_logic,
 			], JSON_PRETTY_PRINT));
 		}
 
